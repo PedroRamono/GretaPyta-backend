@@ -40,9 +40,6 @@ public class LoginController extends BaseController {
 
   @Autowired
   protected JWTManager jwtManager;
-//
-//  @Bean
-//  public A1_JWTManager jwtManager() {
 
   @RequestMapping(value = APIController.LOGIN_API, method = RequestMethod.POST)
   //AZ OK: public ResponseEntity<?> createAuthenticationToken(
