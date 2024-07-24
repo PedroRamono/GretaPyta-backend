@@ -1,0 +1,74 @@
+#
+api:
+  version: 1.1.0
+
+spring:
+  profiles:
+    active:
+      - dev
+
+---
+##--/ DEV /------------##
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/postgres?currentSchema=gretapyta-queries
+    username: postgres
+    password: postgres
+  dbcp2:
+    max-wait-millis: 30000
+    validation-query: select 1
+    validation-query-timeout: 30
+
+  jpa:
+    properties:
+      hibernate:
+        default_schema: gretapyta-queries
+        ddl-auto: update
+        jdbc:
+          lob:
+            non_contextual_creation: true
+      id:
+        new_generator_mappings: true
+
+    open-in-view: false
+
+logging:
+  level:
+    org:
+      springframework: INFO
+
+server:
+  port: 8091
+
+  error:
+    include-stacktrace: never
+
+name: DEV-Greta Pyta
+
+
+---
+##--/ TEST /------------##
+spring:
+  config:
+    activate:
+      on-profile: test
+name: TEST-Greta Pyta
+
+server:
+  port=8093:
+
+---
+##--/ PROD /------------##
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+name: PROD-Greta Pyta
+
+server:
+  port=8094:

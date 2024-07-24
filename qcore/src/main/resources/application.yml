@@ -1,0 +1,6 @@
+# Core
+core:
+  default:
+    locale-code: en
+  format:
+    base-date-time: MM-dd-yyyy HH:mm

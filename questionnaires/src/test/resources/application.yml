@@ -1,0 +1,60 @@
+spring:
+
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/postgres?currentSchema=gretapyta-test
+    username: postgres
+    password: postgres
+  dbcp2:
+    max-wait-millis: 30000
+    validation-query: select 1
+    validation-query-timeout: 30
+
+  sql:
+    init:
+      mode: always
+
+  jpa:
+    generate-ddl: true
+    defer-datasource-initialization: true
+
+    properties:
+      jakarta:
+        persistence:
+          schema-generation:
+            scripts:
+              # trigers error in init.              action: create
+              create-source: metadata
+              create-target: create-greta-test.sql
+
+
+logging:
+  level:
+    org:
+      springframework: INFO
+
+server:
+  port: 8099
+
+  error:
+    include-stacktrace: never
+
+#
+greta:
+  # Cookie:
+  security:
+    jwt-cookie-name: UserJwt
+    jwt-cookie-max-age-for-user: 86400 # 60 * 60 * 24 = 1 day
+    public-key:
+    vector:
+    salt: TEuyxVYT2b7hAyBMRSTpkzDVLnc5!J
+    jwt-secret: 704E635FF6556ANIUE3272359038782F413F4428472B4B6250645367555C5970
+    jwt-is-cookie-based: false
+
+  #Object properties
+  defaults:
+    locale-code: en
+    load-init-data: false
+
+  #Object properties
+  formats:
+    base-date-time: MM-dd-yyyy HH:mm
