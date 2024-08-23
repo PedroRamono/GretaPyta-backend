@@ -1,13 +1,25 @@
 # Questionnaires-main
 
+## Purpose
+Questionnaire/Quiz/Survey/Prediction (QQSP) Self-Service Application.
+This Project is its back-end part.
+
+## Description
+A User can utilize the Application anonymously or can create his/her 
+profile and use it in logged-in state.
+- Anonymous User can only take (answer) QQSP.
+- Logged User can take QQSP but also can create his/her custom QQSP
+for others to answer.
+- a commercial User can create QQSP and then can have an access to
+aggregated and detailed results data.
+ 
+## Structure
+- (1) a Drawer of specific type can hold like-minded Questionnaires.
+- (2) a Questionnaire (or Quiz/Survey/Predictions) should have one or multiple Steps (Sections).
+- (3) a Step has Question(s).
+- (4) a Question can provide Option(s) for User to select from - or expect User custom input for Answer.
 
 ## Development
-
-### Build
-
-```
-mvnw clean package
-```
 
 Start your application with the following command - here with the profile `production`:
 
@@ -58,7 +70,7 @@ mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=com.az.gretapyt
 
 
   2. User
-     - UserQuestionaire
+     - UserQuestionnaire
        - QuestionAnswer
          - SelectedAnswer
          - ProvidedAnswer
