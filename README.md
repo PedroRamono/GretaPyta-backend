@@ -15,7 +15,7 @@ aggregated and detailed results data.
 
 ## Project Structure
 There are 4 main modules: 
-- (a) qcore - common library
+- (a) qcore - common base library
 - (b) questionnaire-admin
 - (c) questionnaires
 - (d) qusers
