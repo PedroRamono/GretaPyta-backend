@@ -12,9 +12,18 @@ profile and use it in logged-in state.
 for others to answer.
 - a commercial User can create QQSP and then can have an access to
 aggregated and detailed results data.
+
+## Project Structure
+There are 4 main modules: 
+(a) qcore - common library
+(b) questionnaire-admin
+(c) questionnaires
+(d) qusers
+Where (b), (c) and (d) are of Application-level (potential for Mocroservices).
+Currently only 'questionnaires' Application is developed.
  
 ## Structure
-- (1) a Drawer of specific type can hold like-minded Questionnaires.
+- (1) a Drawer of specific type (Category) holds like-minded Questionnaires.
 - (2) a Questionnaire (or Quiz/Survey/Predictions) should have one or multiple Steps (Sections).
 - (3) a Step has Question(s).
 - (4) a Question can provide Option(s) for User to select from - or expect User custom input for Answer.
