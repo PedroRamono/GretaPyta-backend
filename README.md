@@ -19,8 +19,9 @@ There are 4 main modules:
 - (b) questionnaire-admin
 - (c) questionnaires
 - (d) qusers
+ 
 Where (b), (c) and (d) are of Application-level (potentially for Microservices architecture).
-"Currently only 'questionnaires' Application is being developed."
+**Currently only 'questionnaires' Application is being developed.**
  
 ## Structure
 - (1) a Drawer of specific type (Category) holds like-minded Questionnaires.
