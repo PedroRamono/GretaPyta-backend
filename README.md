@@ -81,11 +81,13 @@ mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=com.az.gretapyt
 
 
   2. User
+     - UserMessage 
      - UserQuestionnaire
        - QuestionAnswer
          - SelectedAnswer
          - ProvidedAnswer
            - GenericValue
+            
 
       
 ### One-to-One link:
