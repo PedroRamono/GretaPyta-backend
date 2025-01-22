@@ -1,7 +1,5 @@
 package com.az.gretapyta.qcore.util;
 
-import java.util.Locale;
-
 public abstract class Constants {
   public static final String DEFAULT_LOCALE = "en";
   public static final String BASE_DATE_FORMAT = "MM-dd-yyyy";

@@ -1,8 +1,6 @@
 package com.az.gretapyta.questionnaires.dto2;
 
 import com.az.gretapyta.qcore.dto.BaseDTO;
-import com.az.gretapyta.qcore.enums.GenderTypes;
-import com.az.gretapyta.questionnaires.security.UserRoles;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;

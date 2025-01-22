@@ -6,7 +6,6 @@ import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.QuestionnairesApp;
-import com.az.gretapyta.questionnaires.controller.DrawerController;
 import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.mapper2.UserMapper;
 import com.az.gretapyta.questionnaires.model2.User;

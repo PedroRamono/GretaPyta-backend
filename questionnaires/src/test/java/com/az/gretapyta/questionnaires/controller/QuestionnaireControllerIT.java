@@ -3,7 +3,6 @@ package com.az.gretapyta.questionnaires.controller;
 import com.az.gretapyta.qcore.controller.APIController;
 import com.az.gretapyta.qcore.enums.QuestionnaireTypes;
 import com.az.gretapyta.qcore.exception.NotFoundException;
-import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.controller2.UserController;
 import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
@@ -40,7 +39,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
