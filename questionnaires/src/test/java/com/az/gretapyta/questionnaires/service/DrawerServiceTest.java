@@ -5,12 +5,12 @@ import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.model.Drawer;
 import com.az.gretapyta.questionnaires.repository.DrawersRepository;
 import com.az.gretapyta.questionnaires.service.impl.DrawersServiceImpl;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,12 +31,12 @@ public class DrawerServiceTest {
   public static final int TIMES_ONCE = 1;
 
   DrawersRepository mockRepository = mock(DrawersRepository.class);
-  DrawersService service = new DrawersServiceImpl(mockRepository);
+
+  @InjectMocks
+  DrawersServiceImpl service;
 
   private Drawer drawer1;
   private Drawer drawer2;
-
-  /// private List<Drawer> drawersList;
 
   @BeforeEach
   public void setUp() {
@@ -76,7 +76,7 @@ public class DrawerServiceTest {
   @Order(value = 1)
   @DisplayName("(1) When given valid Drawer's ID, then Drawer should be fund.")
   public void test1() {
-    final Drawer result = service.getItemById(TEST_ID_OK);
+    final Drawer result = service.getItemByIdNoUserFilter(TEST_ID_OK);
 
     assertEquals(drawer1, result);
   }
@@ -86,7 +86,7 @@ public class DrawerServiceTest {
   @DisplayName("(2) When given Drawer's ID not valid, then Drawer should not be fund and NotFoundException to be thrown.")
   public void test2() {
     try {
-      Drawer result = service.getItemById(TEST_ID_WRONG);
+      Drawer result = service.getItemByIdNoUserFilter(TEST_ID_WRONG);
     } catch (Exception e) {
       assertThat(e).isInstanceOf(NotFoundException.class);
     }
@@ -98,7 +98,7 @@ public class DrawerServiceTest {
   @DisplayName("(3) When given valid Drawer's code, then Drawer should be fund.")
   public void test3() {
     String validCode = "DRW_CODE_MOCK2";
-    Optional<Drawer> fromDb = service.getItemByCode(validCode);
+    Optional<Drawer> fromDb = service.getItemByCodeNoUserFilter(validCode);
 
     assertThat(fromDb).isNotNull();
     assertThat(fromDb.get().getCode()).isEqualTo(validCode);
@@ -109,9 +109,8 @@ public class DrawerServiceTest {
   @DisplayName("(4) When given Drawer's code not valid, then Drawer should not be fund and NotFoundException to be thrown.")
   public void test4() {
     String invalidCode =  "INVALID_DRW_CODE";
-
     try {
-      Optional<Drawer> fromDb = service.getItemByCode(invalidCode);
+      Optional<Drawer> fromDb = service.getItemByCodeNoUserFilter(invalidCode);
     } catch (Exception e) {
       assertThat(e).isInstanceOf(NotFoundException.class);
     }

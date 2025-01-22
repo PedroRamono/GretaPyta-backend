@@ -7,20 +7,20 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 
+//TODO... move to GenericSpecification
 public class UserSpecification {
 
-  // Example 4. Using a Specification to delete entries.
-  public static Specification<User> ageLessThan18() {
+  public static Specification<User> ageLessThan(int age) {
     return (root, query, cb) -> {
-      LocalDate date = LocalDate.now().minusYears(18);
+      LocalDate date = LocalDate.now().minusYears(age);
       Expression<LocalDate> birthdayDt = root.get("birthday").as(LocalDate.class);
       return cb.lessThan(birthdayDt, date);
     };
   }
 
-  public static Specification<User> isLongTermUser() {
+  public static Specification<User> isLongTermUser(int longYears) {
     return (root, query, cb) -> {
-      LocalDate date = LocalDate.now().minusYears(2);
+      LocalDate date = LocalDate.now().minusYears(longYears);
       return cb.lessThan(root.get("created"), date);
     };
   }

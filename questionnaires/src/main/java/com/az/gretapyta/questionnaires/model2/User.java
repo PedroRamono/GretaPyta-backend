@@ -70,7 +70,8 @@ public class User extends BaseEntity implements Serializable {
   private String role;
 
   // User -> UserQuestionnaire:
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+  ///  @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = false)
   private Set<UserQuestionnaire> userQuestionnaires;
 
 

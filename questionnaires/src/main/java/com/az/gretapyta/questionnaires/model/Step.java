@@ -1,6 +1,8 @@
 package com.az.gretapyta.questionnaires.model;
 
 import com.az.gretapyta.qcore.model.BaseEntity;
+import com.az.gretapyta.questionnaires.model.interfaces.Presentable;
+import com.az.gretapyta.questionnaires.model2.User;
 import com.az.gretapyta.questionnaires.util.Constants;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -18,7 +20,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Table(name = "STEPS")
-public class Step extends BaseEntity implements Serializable {
+public class Step extends BaseEntity implements Presentable, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
 
@@ -26,8 +28,18 @@ public class Step extends BaseEntity implements Serializable {
   @JdbcTypeCode(SqlTypes.JSON)
   private Map<String, String> nameMultilang;
 
+  public String getNameOfLang(String langCode) {
+    return nameMultilang.get(langCode);
+  }
+
   @Column(name = "READY_2_SHOW", nullable = false)
   private Boolean ready2Show;
+
+  // Step <- User:
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+  // private Integer user;
 
   //(1) Many-to-Many Join UP (Questionnaire-Step)
   //
@@ -53,4 +65,16 @@ public class Step extends BaseEntity implements Serializable {
   private Set<StepQuestionLink> stepQuestions; // = new HashSet<>();
   //
   //(2) Many-to-Many Join DOWN (Step-Question)
+
+  @Override
+  public int getCreatorId() {
+    return (user != null ? user.getId() : 0);
+  }
+
+  //----/ Business Logic section: /-------------------------------//
+  @Override
+  public void filterChildrenOnReady2Show(boolean isAdmin, int creatorId) {
+    Presentable.filterChildrenOnReady2Show(isAdmin, creatorId, QuestionsUp);
+  }
+  //----/ Business Logic section: /-------------------------------//
 }

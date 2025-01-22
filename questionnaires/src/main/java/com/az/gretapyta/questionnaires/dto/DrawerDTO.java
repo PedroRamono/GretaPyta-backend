@@ -18,6 +18,9 @@ import static com.az.gretapyta.qcore.util.Constants.DEFAULT_LOCALE;
 public class DrawerDTO extends BaseDTO {
 
   @NotNull
+  private Integer userId;
+
+  @NotNull
   @Size(max = 16)
   private String code;
 

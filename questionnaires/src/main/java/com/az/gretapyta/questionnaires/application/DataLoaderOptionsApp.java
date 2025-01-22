@@ -3,8 +3,10 @@ package com.az.gretapyta.questionnaires.application;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.controller.OptionController;
 import com.az.gretapyta.questionnaires.controller.QuestionController;
+import com.az.gretapyta.questionnaires.controller2.UserController;
 import com.az.gretapyta.questionnaires.dto.OptionDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.model.QuestionOptionLink;
 import com.az.gretapyta.questionnaires.repository.OptionsRepository;
 import lombok.extern.log4j.Log4j2;
@@ -24,12 +26,15 @@ import java.util.TreeMap;
 import static com.az.gretapyta.questionnaires.application.DataLoaderQuestionsApp.*;
 
 @Log4j2
-@Order(5)
+@Order(6)
 @SpringBootApplication
 public class DataLoaderOptionsApp implements ApplicationRunner {
   private final QuestionController questionController;
   private final OptionsRepository optionsRepository;
   private final OptionController optionController;
+  private final UserController userController;
+
+  private UserDTO USER_ADMINISTRATOR;
 
   @Value("${greta.defaults.load-init-data}")
   private boolean loadInitData;
@@ -41,11 +46,13 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
   @Autowired
   public DataLoaderOptionsApp( QuestionController questionController,
                                OptionsRepository optionsRepository,
-                               OptionController optionController ) {
+                               OptionController optionController,
+                               UserController userController) {
 
     this.questionController = questionController;
     this.optionsRepository = optionsRepository;
     this.optionController = optionController;
+    this.userController = userController;
   }
 
   @Override
@@ -53,6 +60,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     if ((! loadInitData) || (optionsRepository.count() > 0)) {
       return;
     }
+    USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
     loadData();
     SaveAllItemsOnly();
     saveLinks(); // For creatings Links Question-Option.
@@ -175,7 +183,9 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
   private void saveData(String query, OptionDTO[] list) {
     int displayOrder = 1;
     for(OptionDTO dto : list) {
-      Optional<OptionDTO> oOption = optionController.fetchDTOFromCode(dto.getCode(), Constants.DEFAULT_LOCALE);
+      Optional<OptionDTO> oOption = optionController.fetchDTOFromCode( dto.getCode(),
+                                                                       USER_ADMINISTRATOR.getId(),
+                                                                       Constants.DEFAULT_LOCALE );
       OptionDTO dtoForLink = (((oOption != null) && oOption.isPresent()) ? oOption.get() : saveDto(dto));
 
       if (query == null || query.isEmpty()) { // No Link to be created
@@ -202,7 +212,9 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
 
   private QuestionOptionLink saveLinkEntry(String query, OptionDTO dtoForLink, int displayOrder, int tenantId) {
     // Adding to the link Table Option-Question:
-    Optional<QuestionDTO> questionDTO = questionController.fetchDTOFromCode(query, Constants.DEFAULT_LOCALE);
+    Optional<QuestionDTO> questionDTO = questionController.fetchDTOFromCode( query,
+                                                                             USER_ADMINISTRATOR.getId(),
+                                                                             Constants.DEFAULT_LOCALE );
     if ((questionDTO != null) && questionDTO.isPresent()) {
       QuestionOptionLink newLink = optionController.executeCreateParentChildLink(questionDTO.get(), dtoForLink, displayOrder, tenantId);
       log.info("New QuestionOptionLink item was created for Option ID={} linking to Question ID={}.",
@@ -326,7 +338,8 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
   //-- Quiz - Geography: Capitals in Africa /-----------//
 
   private void loadData() {
-    //TODO ...
+    UserDTO USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
+
     // (1)
     Map<String, String> elements0 = new TreeMap<>();
     elements0.put("en", "none");
@@ -334,6 +347,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements0.put("ru", "никто");
     OPT_NONE_HE.setCode(OPT_CODE_NONE_HE);
     OPT_NONE_HE.setNameMultilang(elements0);
+    OPT_NONE_HE.setUserId(USER_ADMINISTRATOR.getId());
 
     //(2)
     Map<String, String> elements1 = new TreeMap<>();
@@ -342,6 +356,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements1.put("ru", "никто");
     OPT_NONE_SHE.setCode(OPT_CODE_NONE_SHE);
     OPT_NONE_SHE.setNameMultilang(elements1);
+    OPT_NONE_SHE.setUserId(USER_ADMINISTRATOR.getId());
 
     //(3)
     Map<String, String> elements2 = new TreeMap<>();
@@ -350,6 +365,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements2.put("ru", "никто");
     OPT_NONE_THEY.setCode(OPT_CODE_NONE_THEY);
     OPT_NONE_THEY.setNameMultilang(elements2);
+    OPT_NONE_THEY.setUserId(USER_ADMINISTRATOR.getId());
 
     //(4)
     Map<String, String> elements3 = new TreeMap<>();
@@ -359,6 +375,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     // jsonNameTranslations = Converters.convertMapToJson(elements1);
     OPT_NO.setCode(OPT_CODE_NO);
     OPT_NO.setNameMultilang(elements3);
+    OPT_NO.setUserId(USER_ADMINISTRATOR.getId());
 
     //(5)
     Map<String, String> elements4 = new TreeMap<>();
@@ -367,6 +384,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements4.put("ru", "Да");
     OPT_YES.setCode(OPT_CODE_YES);
     OPT_YES.setNameMultilang(elements4);
+    OPT_YES.setUserId(USER_ADMINISTRATOR.getId());
 
     //(6)
     Map<String, String> elements5 = new TreeMap<>();
@@ -375,6 +393,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements5.put("ru", "я бы не сказал");
     OPT_NOT_TO_SAY.setCode(OPT_CODE_NOT_TO_SAY);
     OPT_NOT_TO_SAY.setNameMultilang(elements5);
+    OPT_NOT_TO_SAY.setUserId(USER_ADMINISTRATOR.getId());
 
     //(7)
     Map<String, String> elements6 = new TreeMap<>();
@@ -383,6 +402,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements6.put("ru", "Я не знаю");
     OPT_DONT_KNOW.setCode(OPT_CODE_DONT_KNOW);
     OPT_DONT_KNOW.setNameMultilang(elements6);
+    OPT_DONT_KNOW.setUserId(USER_ADMINISTRATOR.getId());
 
     //(8)
     Map<String, String> elements7 = new TreeMap<>();
@@ -391,6 +411,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements7.put("ru", "другие");
     OPT_OTHERS.setCode(OPT_CODE_OTHERS);
     OPT_OTHERS.setNameMultilang(elements7);
+    OPT_OTHERS.setUserId(USER_ADMINISTRATOR.getId());
 
     //(9)
     Map<String, String> elements8 = new TreeMap<>();
@@ -399,14 +420,16 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements8.put("ru", "Мужской");
     OPT_SEX_HE.setCode(OPT_CODE_SEX_HE);
     OPT_SEX_HE.setNameMultilang(elements8);
+    OPT_SEX_HE.setUserId(USER_ADMINISTRATOR.getId());
 
     //(10)
     Map<String, String> elements9 = new TreeMap<>();
-    elements9.put("en", "Famale");
+    elements9.put("en", "Female");
     elements9.put("pl", "Kobieta");
     elements9.put("ru", "Женский");
     OPT_SEX_SHE.setCode(OPT_CODE_SEX_SHE);
     OPT_SEX_SHE.setNameMultilang(elements9);
+    OPT_SEX_SHE.setUserId(USER_ADMINISTRATOR.getId());
 
     //-- Social Media: /---------------------------------//
     //(11)
@@ -416,6 +439,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements10.put("ru", "Фейсбук");
     OPT_SOCMED_FACEBOOK.setCode(OPT_CODE_SOCMED_FACEBOOK);
     OPT_SOCMED_FACEBOOK.setNameMultilang(elements10);
+    OPT_SOCMED_FACEBOOK.setUserId(USER_ADMINISTRATOR.getId());
     //(12)
     Map<String, String> elements11 = new TreeMap<>();
     elements11.put("en", "'X' (formerly Tweeter)");
@@ -423,6 +447,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements11.put("ru", "'X' (ранее Твитер)");
     OPT_SOCMED_TWITTER.setCode(OPT_CODE_SOCMED_TWITTER);
     OPT_SOCMED_TWITTER.setNameMultilang(elements11);
+    OPT_SOCMED_TWITTER.setUserId(USER_ADMINISTRATOR.getId());
     //(13)
     Map<String, String> elements12 = new TreeMap<>();
     elements12.put("en", "Instagram");
@@ -430,6 +455,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements12.put("ru", "Инстаграм");
     OPT_SOCMED_INSTAGRAM.setCode(OPT_CODE_SOCMED_INSTAGRAM);
     OPT_SOCMED_INSTAGRAM.setNameMultilang(elements12);
+    OPT_SOCMED_INSTAGRAM.setUserId(USER_ADMINISTRATOR.getId());
     //(14)
     Map<String, String> elements13 = new TreeMap<>();
     elements13.put("en", "TikTok");
@@ -437,6 +463,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements13.put("ru", "ТИК Так");
     OPT_SOCMED_TIKTOK.setCode(OPT_CODE_SOCMED_TIKTOK);
     OPT_SOCMED_TIKTOK.setNameMultilang(elements13);
+    OPT_SOCMED_TIKTOK.setUserId(USER_ADMINISTRATOR.getId());
     //(15)
     Map<String, String> elements14 = new TreeMap<>();
     elements14.put("en", "Telegram");
@@ -444,6 +471,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements14.put("ru", "Телеграм");
     OPT_SOCMED_TELEGRAM.setCode(OPT_CODE_SOCMED_TELEGRAM);
     OPT_SOCMED_TELEGRAM.setNameMultilang(elements14);
+    OPT_SOCMED_TELEGRAM.setUserId(USER_ADMINISTRATOR.getId());
     //-- Social Media: /---------------------------------//
 
     //-- Age ranges: /-----------------------------------//
@@ -454,6 +482,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements15.put("ru", "менее 18 лет");
     OPT_AGERANGE_0_17.setCode(OPT_CODE_AGERANGE_0_17);
     OPT_AGERANGE_0_17.setNameMultilang(elements15);
+    OPT_AGERANGE_0_17.setUserId(USER_ADMINISTRATOR.getId());
     //(17)
     Map<String, String> elements16 = new TreeMap<>();
     elements16.put("en", "18 - 30 yrs.");
@@ -461,6 +490,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements16.put("ru", "18 - 30 лет");
     OPT_AGERANGE_18_30.setCode(OPT_CODE_AGERANGE_18_30);
     OPT_AGERANGE_18_30.setNameMultilang(elements16);
+    OPT_AGERANGE_18_30.setUserId(USER_ADMINISTRATOR.getId());
     //(18)
     Map<String, String> elements17 = new TreeMap<>();
     elements17.put("en", "31 - 50 yrs.");
@@ -468,6 +498,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements17.put("ru", "31 - 50 лет");
     OPT_AGERANGE_31_50.setCode(OPT_CODE_AGERANGE_31_50);
     OPT_AGERANGE_31_50.setNameMultilang(elements17);
+    OPT_AGERANGE_31_50.setUserId(USER_ADMINISTRATOR.getId());
     //(19)
     Map<String, String> elements18 = new TreeMap<>();
     elements18.put("en", "51 - 64 yrs.");
@@ -475,6 +506,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements18.put("ru", "51 - 64 лет");
     OPT_AGERANGE_51_64.setCode(OPT_CODE_AGERANGE_51_64);
     OPT_AGERANGE_51_64.setNameMultilang(elements18);
+    OPT_AGERANGE_51_64.setUserId(USER_ADMINISTRATOR.getId());
     //(20)
     Map<String, String> elements19 = new TreeMap<>();
     elements19.put("en", "over 64 years");
@@ -482,6 +514,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements19.put("ru", "старше 64 лет");
     OPT_AGERANGE_65_Over.setCode(OPT_CODE_AGERANGE_65_Over);
     OPT_AGERANGE_65_Over.setNameMultilang(elements19);
+    OPT_AGERANGE_65_Over.setUserId(USER_ADMINISTRATOR.getId());
     //-- Age ranges: /-----------------------------------//
 
     //-- US 2024 Presidential Elections: /----------------//
@@ -492,6 +525,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements20.put("ru", "Джо Байден");
     OPT_USEL2024_BIDEN.setCode(OPT_CODE_USEL2024_BIDEN);
     OPT_USEL2024_BIDEN.setNameMultilang(elements20);
+    OPT_USEL2024_BIDEN.setUserId(USER_ADMINISTRATOR.getId());
     //(22)
     Map<String, String> elements21 = new TreeMap<>();
     elements21.put("en", "Donald Trump");
@@ -499,6 +533,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements21.put("ru", "Джо Байден");
     OPT_USEL2024_TRUMP.setCode(OPT_CODE_USEL2024_TRUMP);
     OPT_USEL2024_TRUMP.setNameMultilang(elements21);
+    OPT_USEL2024_TRUMP.setUserId(USER_ADMINISTRATOR.getId());
     //(23)
     Map<String, String> elements22 = new TreeMap<>();
     elements22.put("en", "other candidate (Democrats)");
@@ -506,6 +541,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements22.put("ru", "другой кандидат (демократы)");
     OPT_USEL2024_OTHER_DEM.setCode(OPT_CODE_USEL2024_OTHER_DEM);
     OPT_USEL2024_OTHER_DEM.setNameMultilang(elements22);
+    OPT_USEL2024_OTHER_DEM.setUserId(USER_ADMINISTRATOR.getId());
     //(24)
     Map<String, String> elements23 = new TreeMap<>();
     elements23.put("en", "other candidate (Republicans)");
@@ -513,6 +549,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements23.put("ru", "другой кандидат (республиканцы)");
     OPT_USEL2024_OTHER_REP.setCode(OPT_CODE_USEL2024_OTHER_REP);
     OPT_USEL2024_OTHER_REP.setNameMultilang(elements23);
+    OPT_USEL2024_OTHER_REP.setUserId(USER_ADMINISTRATOR.getId());
     //(25)
     Map<String, String> elements24 = new TreeMap<>();
     elements24.put("en", "other candidate");
@@ -520,6 +557,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     elements24.put("ru", "другой кандидат");
     OPT_USEL2024_OTHER_OTHER.setCode(OPT_CODE_USEL2024_OTHER_OTHER);
     OPT_USEL2024_OTHER_OTHER.setNameMultilang(elements24);
+    OPT_USEL2024_OTHER_OTHER.setUserId(USER_ADMINISTRATOR.getId());
     //-- US 2024 Presidential Elections: /----------------//
 
     //-- Quiz - Geography: Rivers in Asia /---------------//
@@ -531,6 +569,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_RIVER_MEKONG.setCode(OPT_CODE_QUIZ_RIVER_MEKONG);
     OPT_QUIZ_RIVER_MEKONG.setNameMultilang(elements25);
     OPT_QUIZ_RIVER_MEKONG.setPreferredAnswer(false);
+    OPT_QUIZ_RIVER_MEKONG.setUserId(USER_ADMINISTRATOR.getId());
     //(27)
     Map<String, String> elements26 = new TreeMap<>();
     elements26.put("en", "Lena");
@@ -539,6 +578,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_RIVER_LENA.setCode(OPT_CODE_QUIZ_RIVER_LENA);
     OPT_QUIZ_RIVER_LENA.setNameMultilang(elements26);
     OPT_QUIZ_RIVER_LENA.setPreferredAnswer(false);
+    OPT_QUIZ_RIVER_LENA.setUserId(USER_ADMINISTRATOR.getId());
     //(28)
     Map<String, String> elements27 = new TreeMap<>();
     elements27.put("en", "Yangtze");
@@ -547,6 +587,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_RIVER_YANGTZE.setCode(OPT_CODE_QUIZ_RIVER_YANGTZE);
     OPT_QUIZ_RIVER_YANGTZE.setNameMultilang(elements27);
     OPT_QUIZ_RIVER_YANGTZE.setPreferredAnswer(true);
+    OPT_QUIZ_RIVER_YANGTZE.setUserId(USER_ADMINISTRATOR.getId());
     //(29)
     Map<String, String> elements28 = new TreeMap<>();
     elements28.put("en", "Yellow River");
@@ -555,6 +596,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_RIVER_YELLOW_RIVER.setCode(OPT_CODE_QUIZ_RIVER_YELLOW_RIVER);
     OPT_QUIZ_RIVER_YELLOW_RIVER.setNameMultilang(elements28);
     OPT_QUIZ_RIVER_YELLOW_RIVER.setPreferredAnswer(false);
+    OPT_QUIZ_RIVER_YELLOW_RIVER.setUserId(USER_ADMINISTRATOR.getId());
     //-- Quiz - Geography: Rivers in Asia /---------------//
 
     //-- Quiz - Geography: Mountains in South America /---//
@@ -566,6 +608,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_MOUNTAIN_ACONCAGUA.setCode(OPT_CODE_QUIZ_MOUNTAIN_ACONCAGUA);
     OPT_QUIZ_MOUNTAIN_ACONCAGUA.setNameMultilang(elements29);
     OPT_QUIZ_MOUNTAIN_ACONCAGUA.setPreferredAnswer(true);
+    OPT_QUIZ_MOUNTAIN_ACONCAGUA.setUserId(USER_ADMINISTRATOR.getId());
     //(31)
     Map<String, String> elements30 = new TreeMap<>();
     elements30.put("en", "Ojos del Salado");
@@ -574,6 +617,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_MOUNTAIN_OJOS_DEL_SALADO.setCode(OPT_CODE_QUIZ_MOUNTAIN_OJOS_DEL_SALADO);
     OPT_QUIZ_MOUNTAIN_OJOS_DEL_SALADO.setNameMultilang(elements30);
     OPT_QUIZ_MOUNTAIN_OJOS_DEL_SALADO.setPreferredAnswer(false);
+    OPT_QUIZ_MOUNTAIN_OJOS_DEL_SALADO.setUserId(USER_ADMINISTRATOR.getId());
     //(32)
     Map<String, String> elements31 = new TreeMap<>();
     elements31.put("en", "Kilimangaro");
@@ -582,6 +626,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_MOUNTAIN_KILIMANGARO.setCode(OPT_CODE_QUIZ_MOUNTAIN_KILIMANGARO);
     OPT_QUIZ_MOUNTAIN_KILIMANGARO.setNameMultilang(elements31);
     OPT_QUIZ_MOUNTAIN_KILIMANGARO.setPreferredAnswer(false);
+    OPT_QUIZ_MOUNTAIN_KILIMANGARO.setUserId(USER_ADMINISTRATOR.getId());
     //(33)
     Map<String, String> elements32 = new TreeMap<>();
     elements32.put("en", "Huascarán");
@@ -590,6 +635,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_MOUNTAIN_HUASCARAN.setCode(OPT_CODE_QUIZ_MOUNTAIN_HUASCARAN);
     OPT_QUIZ_MOUNTAIN_HUASCARAN.setNameMultilang(elements32);
     OPT_QUIZ_MOUNTAIN_HUASCARAN.setPreferredAnswer(false);
+    OPT_QUIZ_MOUNTAIN_HUASCARAN.setUserId(USER_ADMINISTRATOR.getId());
     //-- Quiz - Geography: Mountains in South America /---//
 
     //-- Quiz - Geography: Capitals in Africa /-----------//
@@ -601,6 +647,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_CAPITAL_KAMPALA.setCode(OPT_CODE_QUIZ_CAPITAL_KAMPALA);
     OPT_QUIZ_CAPITAL_KAMPALA.setNameMultilang(elements33);
     OPT_QUIZ_CAPITAL_KAMPALA.setPreferredAnswer(false);
+    OPT_QUIZ_CAPITAL_KAMPALA.setUserId(USER_ADMINISTRATOR.getId());
     //(35)
     Map<String, String> elements34 = new TreeMap<>();
     elements34.put("en", "Dakar");
@@ -609,6 +656,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_CAPITAL_DAKAR.setCode(OPT_CODE_QUIZ_CAPITAL_DAKAR);
     OPT_QUIZ_CAPITAL_DAKAR.setNameMultilang(elements34);
     OPT_QUIZ_CAPITAL_DAKAR.setPreferredAnswer(true);
+    OPT_QUIZ_CAPITAL_DAKAR.setUserId(USER_ADMINISTRATOR.getId());
     //(36)
     Map<String, String> elements35 = new TreeMap<>();
     elements35.put("en", "Cape Town");
@@ -617,6 +665,7 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_CAPITAL_CAPE_TOWN.setCode(OPT_CODE_CAPITAL_CAPE_TOWN);
     OPT_QUIZ_CAPITAL_CAPE_TOWN.setNameMultilang(elements35);
     OPT_QUIZ_CAPITAL_CAPE_TOWN.setPreferredAnswer(false);
+    OPT_QUIZ_CAPITAL_CAPE_TOWN.setUserId(USER_ADMINISTRATOR.getId());
     //(37)
     Map<String, String> elements36 = new TreeMap<>();
     elements36.put("en", "Abuja");
@@ -625,21 +674,13 @@ public class DataLoaderOptionsApp implements ApplicationRunner {
     OPT_QUIZ_CAPITAL_ABUJA.setCode(OPT_CODE_QUIZ_CAPITAL_ABUJA);
     OPT_QUIZ_CAPITAL_ABUJA.setNameMultilang(elements36);
     OPT_QUIZ_CAPITAL_ABUJA.setPreferredAnswer(false);
+    OPT_QUIZ_CAPITAL_ABUJA.setUserId(USER_ADMINISTRATOR.getId());
     //-- Quiz - Geography: Capitals in Africa /-----------//
   }
 
   private static OptionDTO initCommonDTO() {
-    OptionDTO ret = new OptionDTO(); // null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        false,
-//        false,
-//        0,
-//        0);
-    ret.setReady2Show(false);
+    OptionDTO ret = new OptionDTO();
+    ret.setReady2Show(true);
     ret.setCreated(LocalDateTime.now());
     ret.setUpdated(LocalDateTime.now());
     return ret;

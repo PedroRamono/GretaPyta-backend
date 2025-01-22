@@ -1,10 +1,13 @@
 package com.az.gretapyta.questionnaires.controller;
 
 import com.az.gretapyta.qcore.controller.APIController;
-import com.az.gretapyta.qcore.util.Constants;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.QuestionnairesApp;
+import com.az.gretapyta.questionnaires.controller2.UserController;
+import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
 import com.az.gretapyta.questionnaires.dto.DrawerDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.repository.DrawersRepository;
 import com.az.gretapyta.questionnaires.util.Converters;
 import jakarta.servlet.ServletException;
@@ -33,18 +36,19 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest( classes = QuestionnairesApp.class,
+@SpringBootTest( classes = {QuestionnairesApp.class},
                  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-
-@Order(value = 1) // CLASS_ORDER_ISSUE_SOLUTION
+@Order(value = 2) // CLASS_ORDER_ISSUE_SOLUTION
 public class DrawerControllerIT extends BaseClassIT {
 
   @Autowired
   DrawerController controller;
+
+  @Autowired
+  UserController userController;
 
   @Autowired
   private DrawersRepository repository;
@@ -55,10 +59,18 @@ public class DrawerControllerIT extends BaseClassIT {
   private DrawerDTO testDrawer1DTO;
   private DrawerDTO testDrawer2DTO;
 
+
   // @BeforeEach
   @BeforeAll
   public void setUp() {
     resetDb(); // Clear at the beginning.
+
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
 
     mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 // .setControllerAdvice(new NotFoundException())
@@ -66,7 +78,10 @@ public class DrawerControllerIT extends BaseClassIT {
                 .build();
 
     testDrawer1DTO = getTestDrawer1DTO();
+    testDrawer1DTO.setUserId(userAdministratorDTO.getId());
+
     testDrawer2DTO = getTestDrawer2DTO();
+    testDrawer1DTO.setUserId(userAdministratorDTO.getId());
   }
 
   // @AfterEach
@@ -92,7 +107,7 @@ public class DrawerControllerIT extends BaseClassIT {
 
   private static DrawerDTO createTestDrawerDTO(String code, Map<String, String> nameElements) {
     DrawerDTO drawerDTO = new DrawerDTO();
-    drawerDTO.setReady2Show(false);
+    drawerDTO.setReady2Show(true);
 
     drawerDTO.setCode(code);
     drawerDTO.setNameMultilang(nameElements);
@@ -119,10 +134,9 @@ public class DrawerControllerIT extends BaseClassIT {
   public void test02() throws Exception {
     String testUrl = BASE_URI + port + APIController.DRAWERS_URL;
     String jsonContent = Converters.convertObjectToJson(testDrawer1DTO);
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
+
     ResponseEntity<DrawerDTO> retObject = restTemplate.postForEntity(testUrl, entity, DrawerDTO.class);
 
     assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_CREATED);
@@ -134,23 +148,43 @@ public class DrawerControllerIT extends BaseClassIT {
 
   @Test
   @Order(value = 3)
+  /*
+  // Not going through ID Filter - no User authentication/authorization
+  // TODO ... fix it
   @DisplayName("(3) Another way: when valid new DrawerDTO, then create new Drawer.")
   public void test03() throws Exception {
     String testUrl = BASE_URI + port + APIController.DRAWERS_URL;
     String jsonContent = Converters.convertObjectToJson(testDrawer2DTO);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
 
     mockMvc.perform(
             post(testUrl)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
+                .content(jsonContent).headers(headers))
         .andExpect(status().isCreated())
         .andDo(print());
 
     // ResponseEntity<List<DrawerDTO>> foundDTO = controller.getAllItems(Constants.DEFAULT_LOCALE);
-    Optional<DrawerDTO> optFoundDTO = controller.fetchDTOFromCode(DRAWER_CODE_TEST2, Constants.DEFAULT_LOCALE);
+    Optional<DrawerDTO> optFoundDTO = controller.fetchDTOFromCode(DRAWER_CODE_TEST2, userAdministratorDTO.getId(), Constants.DEFAULT_LOCALE);
 
     assertTrue(optFoundDTO.isPresent());
     assertThat(optFoundDTO.get().getCode()).isEqualTo(DRAWER_CODE_TEST2);
+  }
+  */
+  @DisplayName("(3) When valid new DrawerDTO, then create another new Drawer.")
+  public void test03() throws Exception {
+    String testUrl = BASE_URI + port + APIController.DRAWERS_URL;
+    String jsonContent = Converters.convertObjectToJson(testDrawer2DTO);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
+    HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
+
+    ResponseEntity<DrawerDTO> retObject = restTemplate.postForEntity(testUrl, entity, DrawerDTO.class);
+
+    assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_CREATED);
+    assertThat(retObject.getBody()).isInstanceOf(DrawerDTO.class);
+    assertThat(retObject.getBody().getCode().equalsIgnoreCase(testDrawer1DTO.getCode()));
+
+    entityValidIdForTest = retObject.getBody().getId();
   }
 
   //(2) GETs

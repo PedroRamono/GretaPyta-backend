@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 public interface EnumCommon {
   String getCode();
   String getLabel();
+  String getLabel(String langCode);
 
   static String getLabelFromCode(EnumCommon[] enumCommon,
                                         String code) {
@@ -40,7 +41,7 @@ public interface EnumCommon {
               .orElse(null);
   }
 
-  static String getEnumAttributeFromPredicate( EnumCommon[] enumCommon,
+  private static String getEnumAttributeFromPredicate( EnumCommon[] enumCommon,
                                                       Predicate<EnumCommon> tester,
                                                       Function<EnumCommon, String> mapper ) {
     return

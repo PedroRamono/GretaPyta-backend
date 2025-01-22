@@ -1,13 +1,13 @@
 package com.az.gretapyta.questionnaires.mapper;
 
-import com.az.gretapyta.qcore.enums.AnswerTypes;
-import com.az.gretapyta.qcore.enums.EnumCommon;
 import com.az.gretapyta.qcore.util.CommonUtilities;
 import com.az.gretapyta.questionnaires.dto.OptionDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
 import com.az.gretapyta.questionnaires.model.Question;
+import com.az.gretapyta.questionnaires.model.QuestionOptionLink;
 import com.az.gretapyta.questionnaires.model.StepQuestionLink;
 import com.az.gretapyta.questionnaires.service2.AnswersSelectedService;
+import com.az.gretapyta.questionnaires.service2.UsersService;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,12 +26,19 @@ public abstract class QuestionMapper {
   @Autowired
   protected AnswersSelectedService answersSelectedService;
 
+  @Autowired
+  UsersService usersService;
+
   @BeanMapping(ignoreByDefault = true)
   @Mapping(source = "id", target = "id")
+  @Mapping(source = "user.id", target = "userId")
   @Mapping(source = "code", target = "code")
+  @Mapping(source = "titleMultilang", target = "titleMultilang")
+  @Mapping(source = "questionAskedMultilang", target = "questionAskedMultilang")
   @Mapping(source = "created", target = "created")
   @Mapping(source = "updated", target = "updated")
   @Mapping(source = "ready2Show", target = "ready2Show")
+  @Mapping(source = "answerType", target = "answerType")
   public abstract QuestionDTO map(Question entity);
 
   @BeanMapping(ignoreByDefault = true) // ignoreByDefault = false)
@@ -41,6 +48,7 @@ public abstract class QuestionMapper {
   @Mapping(source = "questionAskedMultilang", target = "questionAskedMultilang")
   @Mapping(source = "created", target = "created")
   @Mapping(source = "ready2Show", target = "ready2Show")
+  @Mapping(source = "answerType", target = "answerType")
   public abstract Question map(QuestionDTO dto);
 
   public QuestionDTO mapWithLang(Question entity, String langCode) {
@@ -52,29 +60,23 @@ public abstract class QuestionMapper {
     dto.setTitle(CommonUtilities.getTranslatedText(entity.getTitleMultilang(), langCode, "title"));
     dto.setQuestionAsked(CommonUtilities.getTranslatedText(entity.getQuestionAskedMultilang(), langCode, "questionAsked"));
 
+    //(3) Options, do sorting:
+    List<OptionDTO> sortedOptionsDto = entity.getQuestionOptions()
+        .stream()
+        .sorted(Comparator.comparing(QuestionOptionLink::getDisplayOrder))
+        .map(p -> {
+                OptionDTO n = optionMapper.mapWithLang(p.getOption(), langCode);
+                n.setDisplayOrder(p.getDisplayOrder());
+                return n;
+                }
+         )
+        .toList();
+
     //(4)
-    // AnswerTypes type conversion:
-    String enumCode = entity.getAnswerType();
-    if ( ! ((enumCode == null) || enumCode.isEmpty())) {
-      EnumCommon enumCommon = EnumCommon.getEnumFromCode(AnswerTypes.values(), enumCode);
-      if (enumCommon != null) {
-        dto.setAnswerType((AnswerTypes) enumCommon); // cast to AnswerTypes.
-      }
-    }
+    populatePopularityCounts(entity.getId(), sortedOptionsDto);
+    dto.setOptions(sortedOptionsDto);
 
-    //(5) Options:
-    List<OptionDTO> listDto =
-        entity.getOptions().stream().map(p -> optionMapper.mapWithLang(p, langCode)).toList();
-
-    //(6)
-    populatePopularityCounts(entity.getId(), listDto);
-
-    //(7)
-    dto.setOptions( listDto
-            .stream()
-            .sorted(Comparator.comparing(OptionDTO::getDisplayOrder))
-            .toList());
-
+    //(5)
     dto.setDisplayOrder(StepMapper.DEFAULT_DISPLAY_ORDER); // some (not-null) default is needed.
 
     return dto;
@@ -101,7 +103,6 @@ public abstract class QuestionMapper {
     if ((popularityMap == null) || popularityMap.isEmpty()) {
       return;
     }
-
     for (OptionDTO n : list) {
       Integer count = popularityMap.get(n.getId());
       n.setStatsCntr(count == null ? 0 : count);
@@ -109,10 +110,7 @@ public abstract class QuestionMapper {
   }
 
   @AfterMapping
-  public static void afterChildMapping(@MappingTarget Question entity, QuestionDTO dto) {
-    // AnswerTypes type conversion:
-    if (dto.getAnswerType() != null) {
-      entity.setAnswerType(dto.getAnswerType().getCode());
-    }
+  public void afterChildMapping(@MappingTarget Question entity, QuestionDTO dto) {
+    entity.setUser(usersService.getItemById(dto.getUserId()));
   }
 }

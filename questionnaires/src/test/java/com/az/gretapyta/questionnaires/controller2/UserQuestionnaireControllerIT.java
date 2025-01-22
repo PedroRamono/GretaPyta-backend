@@ -2,6 +2,7 @@ package com.az.gretapyta.questionnaires.controller2;
 
 import com.az.gretapyta.qcore.controller.APIController;
 import com.az.gretapyta.qcore.enums.UserQuestionnaireStatuses;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.HttpRootRequestIT;
@@ -70,10 +71,19 @@ public class UserQuestionnaireControllerIT extends BaseClassIT {
   InetAddress ipAddressFromLocal;
   InetAddress ipAddressFrom222;
 
+  private UserDTO userAdministratorDTO;
+
   // @BeforeEach
   @BeforeAll
   public void setUp() {
     resetDb(); // Clear at the beginning.
+
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
 
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
@@ -98,7 +108,10 @@ public class UserQuestionnaireControllerIT extends BaseClassIT {
 
   private QuestionnaireDTO getQuestionnaireEntity(String parentCode) {
     // Should still exist from QuestionnaireControllerIT Tests:
-    Optional<QuestionnaireDTO> retObject = questionnaireController.fetchDTOFromCode(parentCode, Constants.DEFAULT_LOCALE);
+    Optional<QuestionnaireDTO> retObject = questionnaireController.fetchDTOFromCode(
+        parentCode,
+        userAdministratorDTO.getId(),
+        Constants.DEFAULT_LOCALE);
     return retObject.get();
   }
 
@@ -109,7 +122,7 @@ public class UserQuestionnaireControllerIT extends BaseClassIT {
     return UserQuestionnaireController.createUserQuestionnaireDTO( userDTO,
                                                                    questionnaireDTO,
                                                                    userDTO.getPreferredLang(),
-                                                                   ipAddressFrom,
+                                                                   ipAddressFrom.getHostAddress(),
                                                                    UserQuestionnaireStatuses.UNKNOWN,
                                                                    Collections.emptyList() );
   }
@@ -119,22 +132,22 @@ public class UserQuestionnaireControllerIT extends BaseClassIT {
                                         InetAddress inetAddress ) throws Exception {
     UserQuestionnaireDTO dto = createUserQuestionnaireDTO(userDto, questionnaireDTO, inetAddress);
 
-    ResponseEntity<UserQuestionnaireDTO> retObject = postForEntity(dto);
+    ResponseEntity<UserQuestionnaireDTO> retObject = postForEntity(dto, userDto.getId());
 
     assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_CREATED);
     assertThat(retObject.getBody()).isInstanceOf(UserQuestionnaireDTO.class);
     assertThat(retObject.getBody().getUserDTO()).isEqualTo(userDto.getId());
     assertThat(retObject.getBody().getQuestionnaireDTO()).isEqualTo(questionnaireDTO.getId());
-    assertThat(retObject.getBody().getIpAddressFrom().getHostAddress().equalsIgnoreCase(inetAddress.getHostAddress()));
+
+    assertThat(retObject.getBody().getIpAddressFrom().equalsIgnoreCase(inetAddress.getHostAddress()));
 
     entityValidIdForTest = retObject.getBody().getId();
   }
 
-  private ResponseEntity<UserQuestionnaireDTO> postForEntity(UserQuestionnaireDTO itemDto) throws Exception {
+  private ResponseEntity<UserQuestionnaireDTO> postForEntity(UserQuestionnaireDTO itemDto, int takerUserId) throws Exception {
     String testUrl = BASE_URI + port + APIController.USERS_QUESTIONNAIRES_URL;
     String jsonContent = Converters.convertObjectToJson(itemDto);
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = armHeaderWithAttribs(takerUserId);
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
     return restTemplate.postForEntity(testUrl, entity, UserQuestionnaireDTO.class);
   }

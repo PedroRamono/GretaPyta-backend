@@ -1,7 +1,6 @@
 package com.az.gretapyta.questionnaires.repository;
 
 import com.az.gretapyta.questionnaires.model.Questionnaire;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -13,6 +12,5 @@ public interface QuestionnairesRepository extends JpaRepository<Questionnaire, I
                                           JpaSpecificationExecutor<Questionnaire> {
 
   Optional<Questionnaire> findByCode(String code);
-
-  Questionnaire findByUrlIdName(String urlIdName);
+  Optional<Questionnaire> findByUrlIdName(String urlIdName);
 }

@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static com.az.gretapyta.qcore.controller.APIController.RESTRICTED_ENTITY;
+
 @Log4j2
 @Configuration
 @EnableWebSecurity
@@ -61,18 +63,45 @@ public class SecurityConfig {
 
     http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.DELETE)
-                    .hasRole(UserRoles.ADMIN.getCode())
-                // Allow only Administrators to GET User(s)
-                .requestMatchers( HttpMethod.GET,APIController.USERS_URL + "/**")
-                    .hasRole(UserRoles.ADMIN.getCode())
-                // Allow creating the User:
-                .requestMatchers(HttpMethod.POST, APIController.USERS_URL + "")
-                    .permitAll()
-                // Allow updating the User:
-                .requestMatchers(HttpMethod.PUT, APIController.USERS_URL + "")
-                .   permitAll()
-                .requestMatchers("/**").permitAll()
+
+            // Allow only Administrators to DELETE anything (can be changed in the future)
+            //.requestMatchers()
+            .requestMatchers(HttpMethod.DELETE,APIController.DRAWERS_URL + "/**")
+                .hasRole(UserRoles.ADMIN.getCode())
+
+            // Allow only Administrators to POST in Drawers (Categories)
+            .requestMatchers(HttpMethod.POST,APIController.DRAWERS_URL + "/**")
+                .hasRole(UserRoles.ADMIN.getCode())
+
+            // Allow only Administrators to PUT in Drawers (Categories)
+            .requestMatchers(HttpMethod.PUT,APIController.DRAWERS_URL + "/**")
+                .hasRole(UserRoles.ADMIN.getCode())
+
+            // Allow only Administrators to PATCH in Drawers (Categories)
+            .requestMatchers(HttpMethod.PATCH,APIController.DRAWERS_URL + "/**")
+                .hasRole(UserRoles.ADMIN.getCode())
+
+            // Allow only Administrators and Demo Administrators to GET from Users:
+            .requestMatchers(HttpMethod.GET, APIController.USERS_URL + RESTRICTED_ENTITY + "/**")
+                .hasAnyRole(UserRoles.ADMIN.getCode(), UserRoles.ADMIN_DEMO.getCode())
+
+            // Allow creating the User:
+            .requestMatchers(HttpMethod.POST, APIController.USERS_URL + "")
+                .permitAll()
+
+            // Allow updating the User (PUT):
+            .requestMatchers(HttpMethod.PUT, APIController.USERS_URL + "")
+                .permitAll()
+
+             // Allow updating the User (PATCH):
+            .requestMatchers(HttpMethod.PATCH, APIController.USERS_URL + "")
+                .permitAll()
+
+                // Allow updating the Questionnaire:
+            .requestMatchers(HttpMethod.PATCH, APIController.QUESTIONNAIRES_URL)
+                .permitAll()
+                .requestMatchers("/**")
+                .permitAll()
         )
         .authenticationManager(authenticationManager)
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

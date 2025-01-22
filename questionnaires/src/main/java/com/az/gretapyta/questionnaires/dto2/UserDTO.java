@@ -29,7 +29,7 @@ public class UserDTO extends BaseDTO {
   @Size(max = 64)
   private String emailAddress;
 
-  private GenderTypes gender;
+  private String gender;
 
   private LocalDate birthday;
 
@@ -47,7 +47,7 @@ public class UserDTO extends BaseDTO {
 
   private boolean anonymousUser;
 
-  private UserRoles role;
+  private String role;
 
   private List<UserQuestionnaireDTO> userQuestionnairesDTO;
 }

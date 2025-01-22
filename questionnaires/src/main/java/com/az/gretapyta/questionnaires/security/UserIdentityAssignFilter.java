@@ -70,7 +70,7 @@ public class UserIdentityAssignFilter extends BaseUserIdentityFilter {
     if (user==null) {
       return null;
     }
-    String tokenContent = jwtTokenUtil.generateTokenWithId(user);
+    String tokenContent = jwtTokenUtil.generateTokenWithId(user.getId());
     return jwtManager().composeUserJwt(tokenContent);
   }
 

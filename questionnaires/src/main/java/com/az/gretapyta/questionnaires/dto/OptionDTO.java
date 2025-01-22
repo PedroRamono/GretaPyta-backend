@@ -16,7 +16,9 @@ import static com.az.gretapyta.qcore.util.Constants.DEFAULT_LOCALE;
 @Data
 // @AllArgsConstructor
 public class OptionDTO extends BaseDTO {
-  /// private Integer id;
+
+  @NotNull
+  private Integer userId;
 
   @NotNull
   @Size(max = 16)

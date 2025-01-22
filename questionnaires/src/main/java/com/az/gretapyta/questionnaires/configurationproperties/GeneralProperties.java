@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "greta")
 public class GeneralProperties {
 
+  private String clientDomain; // for now assumed only single Client Domain.
+
   //(1)
   @Data
   @Validated

@@ -6,7 +6,7 @@ import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.model.BaseEntity;
 import com.az.gretapyta.qcore.service.BaseServiceImpl;
 import com.az.gretapyta.qcore.util.CommonUtilities;
-import com.az.gretapyta.questionnaires.jpa2.AnswerSelectedSpecification;
+import com.az.gretapyta.questionnaires.jpa.GenericSpecification;
 import com.az.gretapyta.questionnaires.model.Question;
 import com.az.gretapyta.questionnaires.model2.AnswerSelected;
 import com.az.gretapyta.questionnaires.repository.QuestionsRepository;
@@ -14,6 +14,7 @@ import com.az.gretapyta.questionnaires.repository2.AnswersSelectedRepository;
 import com.az.gretapyta.questionnaires.service2.AnswersSelectedService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,16 +36,30 @@ public class AnswersSelectedServiceImpl extends BaseServiceImpl implements Answe
 
   @Override
   public List<AnswerSelected> getItemsByQuestionAnswerId(Integer questionAnswerId) {
-    return repository.findAll(AnswerSelectedSpecification.withQuestionAnswerId(questionAnswerId))
+    Specification<AnswerSelected> specQuestionAnswerId = GenericSpecification.getParentIdSpecs(
+        questionAnswerId,
+        "questionAnswer");
+
+    return repository.findAll(specQuestionAnswerId)
         .stream()
         .toList();
   }
 
   @Override
   public Optional<AnswerSelected> getItemByByQuestionAnswerIdAndOptionId(Integer questionAnswerId, Integer optionId) {
+
+    Specification<AnswerSelected> specQuestionAnswerId = GenericSpecification.getParentIdSpecs(
+        questionAnswerId,
+        "questionAnswer");
+
+    Specification<AnswerSelected> specOptionId = GenericSpecification.getParentIdSpecs(
+        optionId,
+        "optionAnswer");
+
     return repository.findAll(
-        AnswerSelectedSpecification.withQuestionAnswerId(questionAnswerId)
-            .and(AnswerSelectedSpecification.withOptionId(optionId))).stream().findFirst();
+        // AnswerSelectedSpecification.withQuestionAnswerId(questionAnswerId)
+        //     .and(AnswerSelectedSpecification.withOptionId(optionId))).stream().findFirst();
+        specQuestionAnswerId.and(specOptionId)).stream().findFirst();
   }
 
   @Override

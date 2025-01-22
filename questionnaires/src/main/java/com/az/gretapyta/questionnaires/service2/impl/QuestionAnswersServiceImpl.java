@@ -6,7 +6,7 @@ import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.model.BaseEntity;
 import com.az.gretapyta.qcore.service.BaseServiceImpl;
 import com.az.gretapyta.qcore.util.CommonUtilities;
-import com.az.gretapyta.questionnaires.jpa2.QuestionAnswerSpecification;
+import com.az.gretapyta.questionnaires.jpa.GenericSpecification;
 import com.az.gretapyta.questionnaires.model.Question;
 import com.az.gretapyta.questionnaires.model2.AnswerProvided;
 import com.az.gretapyta.questionnaires.model2.AnswerSelected;
@@ -16,6 +16,7 @@ import com.az.gretapyta.questionnaires.service.QuestionsService;
 import com.az.gretapyta.questionnaires.service2.QuestionAnswersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -41,15 +42,27 @@ public class QuestionAnswersServiceImpl extends BaseServiceImpl implements Quest
   }
 
   public List<QuestionAnswer> getAllItemsByUserQuestionnaireId(Integer userQuestionnaireId) {
-    return repository.findAll(
-        QuestionAnswerSpecification.withUserQuestionnaireId(userQuestionnaireId));
+
+    Specification<QuestionAnswer> specUserQuestionnaireId = GenericSpecification.getParentIdSpecs(
+        userQuestionnaireId,
+        "userQuestionnaire");
+
+    return repository.findAll(specUserQuestionnaireId);
   }
 
   public Optional<QuestionAnswer> getItemByUserQuestionnaireIdAndQuestionId( Integer userQuestionnaireId,
                                                                              Integer questionId ) {
+
+    Specification<QuestionAnswer> specUserQuestionnaireId = GenericSpecification.getParentIdSpecs(
+        userQuestionnaireId,
+        "userQuestionnaire");
+
+    Specification<QuestionAnswer> specQuestionId = GenericSpecification.getParentIdSpecs(
+        questionId,
+        "question");
+
     return repository.findAll(
-        QuestionAnswerSpecification.withUserQuestionnaireId(userQuestionnaireId)
-            .and(QuestionAnswerSpecification.withQuestionId(questionId)))
+        specUserQuestionnaireId.and(specQuestionId))
         .stream()
         .findFirst();
   }
@@ -76,7 +89,7 @@ public class QuestionAnswersServiceImpl extends BaseServiceImpl implements Quest
   @Override
   protected <QuestionAnswer extends BaseEntity> boolean validateBeforeCreate(QuestionAnswer entity, String lang) throws BusinessException {
     if (super.validateBeforeCreate(entity, lang)) {
-      Question question = questionsService.getItemById(
+      Question question = questionsService.getItemByIdNoUserFilter(
           ((com.az.gretapyta.questionnaires.model2.QuestionAnswer) entity).getQuestion().getId());
       if (AnswerTypes.isOfUserInputType(question.getAnswerType())) {
         return validateForUserInputType((com.az.gretapyta.questionnaires.model2.QuestionAnswer) entity, question);

@@ -5,9 +5,8 @@ import com.az.gretapyta.questionnaires.dto.DrawerDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionnaireDTO;
 import com.az.gretapyta.questionnaires.model.Drawer;
 import com.az.gretapyta.questionnaires.service.DrawersService;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.az.gretapyta.questionnaires.service2.UsersService;
+import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -20,10 +19,14 @@ public abstract class DrawerMapper {
   @Autowired
   protected DrawersService drawersService;
 
+  @Autowired
+  UsersService usersService;
+
   @BeanMapping(ignoreByDefault = true)
   @Mapping(source = "id", target = "id")
+  @Mapping(source = "user.id", target = "userId")
   @Mapping(source = "code", target = "code")
-  ///  @Mapping(source = "nameMultilang", target = "nameMultilang")
+  @Mapping(source = "nameMultilang", target = "nameMultilang")
   @Mapping(source = "ready2Show", target = "ready2Show")
   @Mapping(source = "created", target = "created")
   public abstract DrawerDTO map(Drawer entity);
@@ -59,5 +62,10 @@ public abstract class DrawerMapper {
       Integer count = popularityMap.get(n.getId());
       n.setStatsCntr(count == null ? 0 : count);
     }
+  }
+
+  @AfterMapping
+  public void afterChildMapping(@MappingTarget Drawer entity, DrawerDTO dto) {
+    entity.setUser(usersService.getItemById(dto.getUserId()));
   }
 }

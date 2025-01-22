@@ -53,6 +53,8 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
   @Value("${greta.defaults.load-init-data}")
   private boolean loadInitData;
 
+  private UserDTO USER_ADMINISTRATOR;
+
   @Autowired
   public DataLoader2SampleQuestionnairesTaken( UserQuestionnairesRepository userQuestionnairesRepository,
                                                UserController userController,
@@ -89,6 +91,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
     if ((! loadInitData) || (userQuestionnairesRepository.count() > 0)) {
       return;
     }
+    USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
     loadData();
     saveAllItems();
   }
@@ -121,8 +124,12 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
   }
 
   private UserQuestionnaireDTO saveEntityItem(UserQuestionnaireDTO dto) {
+
     String langCode = dto.getAnswerLang();
-    QuestionnaireDTO questionnaireDTO = questionnaireController.fetchDTOFromId(dto.getQuestionnaireDTO(), langCode);
+    QuestionnaireDTO questionnaireDTO = questionnaireController.fetchDTOFromId(
+        dto.getQuestionnaireDTO(),
+        USER_ADMINISTRATOR.getId(),
+        langCode);
     UserDTO userDTO = userController.fetchDTOFromId(dto.getUserDTO());
     //(2)
     InetAddress ipAddressFrom = null;
@@ -136,7 +143,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
     //(1) Create new UserQuestionnaireDTO to get ID.
     UserQuestionnaireDTO newUserQuestionnaireDTO = processSavingUserQuestionnaire( questionnaireDTO,
         userDTO,
-        ipAddressFrom,
+        (ipAddressFrom != null ? ipAddressFrom.getHostAddress() : null),
         langCode );
 
     if (newUserQuestionnaireDTO == null) {
@@ -166,9 +173,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
         List<OptionDTO> optionDTOList = new ArrayList<>();
         // Collect OptionDTO list:
         for (AnswerSelectedDTO m : answerSelectedDTOList) {
-          //AZ303 optionDTOList.add(m.getOptionDTO());
-          //AZ303
-          OptionDTO optionDTO = optionController.fetchDTOFromId(m.getOptionDTO(), langCode);
+          OptionDTO optionDTO = optionController.fetchDTOFromId(m.getOptionDTO(), USER_ADMINISTRATOR.getId(), langCode);
           optionDTOList.add(optionDTO);
         }
 
@@ -205,11 +210,13 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
       // for lang: EN
       Optional<QuestionnaireDTO> OPT_QUESTNR_POL_US_2024_ELECTIONS_EN =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_POL_US_2024_ELECTIONS,
+              USER_ADMINISTRATOR.getId(),
               "en");
       QuestionnaireDTO QUESTNR_POL_US_2024_ELECTIONS_EN = OPT_QUESTNR_POL_US_2024_ELECTIONS_EN.get();
       // for lang: PL
       Optional<QuestionnaireDTO> OPT_QUESTNR_POL_US_2024_ELECTIONS_PL =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_POL_US_2024_ELECTIONS,
+              USER_ADMINISTRATOR.getId(),
               USER_SAMPLE2_PL.getPreferredLang());
       QuestionnaireDTO QUESTNR_POL_US_2024_ELECTIONS_PL = OPT_QUESTNR_POL_US_2024_ELECTIONS_PL.get();
       //---/ Questionnaire (1) /-------------------------------------------------------//
@@ -218,12 +225,14 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
       // for lang: EN
       Optional<QuestionnaireDTO> OPT_QUESTNR_SMD_SURVEY_EN =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_SMD_SURVEY,
+              USER_ADMINISTRATOR.getId(),
               "en");
       QuestionnaireDTO QUESTNR_SMD_SURVEY_EN = OPT_QUESTNR_SMD_SURVEY_EN.get();
 
       // for lang: PL
       Optional<QuestionnaireDTO> OPT_QUESTNR_SMD_SURVEY_PL =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_SMD_SURVEY,
+              USER_ADMINISTRATOR.getId(),
               USER_SAMPLE2_PL.getPreferredLang());
       QuestionnaireDTO QUESTNR_SMD_SURVEY_PL = OPT_QUESTNR_SMD_SURVEY_PL.get();
       //---/ Questionnaire (2) /-------------------------------------------------------//
@@ -232,12 +241,14 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
       // for lang: EN
       Optional<QuestionnaireDTO> OPT_QUESTNR_PPL_IDENTIFY_YOURSELF_EN =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_PPL_IDENTIFY_YOURSELF,
+              USER_ADMINISTRATOR.getId(),
               "en");
       QuestionnaireDTO QUESTNR_PPL_IDENTIFY_YOURSELF_EN = OPT_QUESTNR_PPL_IDENTIFY_YOURSELF_EN.get();
 
       // for lang: PL
       Optional<QuestionnaireDTO> OPT_QUESTNR_PPL_IDENTIFY_YOURSELF_PL =
           questionnaireController.fetchDTOFromCode( DataLoaderQuestionnairesApp.QUESTNR_PPL_IDENTIFY_YOURSELF,
+              USER_ADMINISTRATOR.getId(),
               USER_SAMPLE2_PL.getPreferredLang());
       QuestionnaireDTO QUESTNR_PPL_IDENTIFY_YOURSELF_PL = OPT_QUESTNR_PPL_IDENTIFY_YOURSELF_PL.get();
       //---/ Questionnaire (3) /-------------------------------------------------------//
@@ -282,6 +293,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
     //(2)
     Set<QuestionDTO> questionsDTO = questionnaireController.getAllQuestionsForQuestionnaire(
         questionnaireDTO.getId(),
+        USER_ADMINISTRATOR.getId(),
         userDTO.getPreferredLang());
 
     //(3)
@@ -289,7 +301,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
         UserQuestionnaireController.createUserQuestionnaireDTO( userDTO,
             questionnaireDTO,
             userDTO.getPreferredLang(),
-            ipAddressFrom,
+            (ipAddressFrom != null ? ipAddressFrom.getHostAddress() : null),
             UserQuestionnaireStatuses.UNKNOWN,
             Collections.emptyList() );
 
@@ -326,7 +338,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
 
     boolean isUserInput = false;
     EnumCommon enumCommon =
-        EnumCommon.getEnumFromCode(AnswerTypes.values(), questionDto.getAnswerType().getCode());
+        EnumCommon.getEnumFromCode(AnswerTypes.values(), questionDto.getAnswerType());
     if (enumCommon != null) {
       AnswerTypes answerTypes = (AnswerTypes)enumCommon; // cast to AnswerTypes.
       isUserInput = AnswerTypes.isOfUserInputType(answerTypes);
@@ -353,7 +365,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
     List<AnswerSelectedDTO> ret = new ArrayList<>();
     boolean isMultichoice = false;
     EnumCommon enumCommon =
-        EnumCommon.getEnumFromCode(AnswerTypes.values(), questionDTO.getAnswerType().getCode());
+        EnumCommon.getEnumFromCode(AnswerTypes.values(), questionDTO.getAnswerType());
     if (enumCommon != null) {
       AnswerTypes answerTypes = (AnswerTypes)enumCommon; // cast to AnswerTypes.
       isMultichoice = AnswerTypes.isMultiSelectionChoice(answerTypes);
@@ -366,7 +378,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
             .filter(d -> d.getCode().equalsIgnoreCase(n))
             .findFirst();
         if (answerOpt.isPresent()) {
-          AnswerSelectedDTO answerDTO = new AnswerSelectedDTO(questionAnswerDTO.getId(), answerOpt.get().getId()); //AZ303
+          AnswerSelectedDTO answerDTO = new AnswerSelectedDTO(questionAnswerDTO.getId(), answerOpt.get().getId());
           ret.add(answerDTO);
         }
       }
@@ -374,16 +386,16 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
 
     // Check if desired answer(s) were provided, otherwise add some default
     if (ret.isEmpty()) {
-      AnswerSelectedDTO answer0 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(0).getId()); //AZ303
+      AnswerSelectedDTO answer0 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(0).getId());
       ret.add(answer0);
       // For multi-choice some more
       if (isMultichoice) {
         if (options.size() > 1) {
-          AnswerSelectedDTO answer1 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(1).getId()); //AZ303
+          AnswerSelectedDTO answer1 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(1).getId());
           ret.add(answer1);
         }
         if (options.size() > 2) { // last one
-          AnswerSelectedDTO answer99 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(options.size() -1).getId()); //AZ303
+          AnswerSelectedDTO answer99 = new AnswerSelectedDTO(questionAnswerDTO.getId(), options.get(options.size() -1).getId());
           ret.add(answer99);
         }
       }
@@ -393,11 +405,11 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
 
   private AnswerProvidedDTO getProvidedAnswer(QuestionAnswerDTO questionAnswerDTO) {
     int questionId = questionAnswerDTO.getQuestionDTO();
-    QuestionDTO questionDTO =questionController.fetchDTOFromId(questionId, Constants.DEFAULT_LOCALE);
-    String valueType = questionDTO.getAnswerType().getCode(); // AnswerTypes.NUMBER_INTEGER.getCode();
+    QuestionDTO questionDTO =questionController.fetchDTOFromId(questionId, USER_ADMINISTRATOR.getId(), Constants.DEFAULT_LOCALE);
+    String valueType = questionDTO.getAnswerType(); // AnswerTypes.NUMBER_INTEGER.getCode();
     String valueAsStr = "12";
     GenericValue value = new GenericValue(valueType, valueAsStr);
-    return new AnswerProvidedDTO(questionAnswerDTO.getId(), value); //AZ401 add .getId()
+    return new AnswerProvidedDTO(questionAnswerDTO.getId(), value);
   }
 
   //========================================================================//
@@ -415,7 +427,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
 
   private UserQuestionnaireDTO processSavingUserQuestionnaire( QuestionnaireDTO questionnaireDTO,
                                                                UserDTO userDTO,
-                                                               InetAddress ipAddressFrom,
+                                                               String ipAddressFrom,
                                                                String langCode) {
 
     UserQuestionnaireDTO dto =
@@ -456,7 +468,6 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
     }
   }
 
-  //AZ401
   private QuestionAnswerDTO createNewQuestionAnswerDTO( UserQuestionnaireDTO userQuestionnaireDto,
                                                         int questionId,
                                                         List<AnswerSelectedDTO> answerSelectionsDTO,
@@ -471,14 +482,14 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
                                                           GenericValue genericValue,
                                                           String langCode ) {
 
-    AnswerProvidedDTO dto = new AnswerProvidedDTO(questionAnswerDTO.getId(), genericValue); //AZ401 add .getId()
+    AnswerProvidedDTO dto = new AnswerProvidedDTO(questionAnswerDTO.getId(), genericValue);
     try {
       AnswerProvidedDTO newDto = answerProvidedController.executeCreateItem(dto, langCode);
       log.info("New AnswerProvidedDTO item was created: ID={}", newDto.getId());
       return newDto;
     } catch (Exception e) {
       log.error(e);
-      log.error("Cannot save AnswerProvidedDTO for QuestionAnswer ID: {} (language={})", dto.getQuestionAnswerDTO().toString(), langCode); //AZ401 removed .getId()
+      log.error("Cannot save AnswerProvidedDTO for QuestionAnswer ID: {} (language={})", dto.getQuestionAnswerDTO().toString(), langCode);
       return null;
     }
   }
@@ -487,7 +498,7 @@ public class DataLoader2SampleQuestionnairesTaken implements ApplicationRunner {
                                                          OptionDTO optionDTO,
                                                          String langCode ) {
 
-    AnswerSelectedDTO dto = new AnswerSelectedDTO(questionAnswerDTO.getId(), optionDTO.getId()); //AZ303
+    AnswerSelectedDTO dto = new AnswerSelectedDTO(questionAnswerDTO.getId(), optionDTO.getId());
     try {
       AnswerSelectedDTO newDto = answerSelectedController.executeCreateItem(dto, langCode);
       log.info("New AnswerSelectedDTO item was created: ID={}", newDto.getId());

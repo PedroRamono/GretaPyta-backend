@@ -45,7 +45,7 @@ public abstract class AnswerSelectedMapper {
     int questionAnswerId = dto.getQuestionAnswerDTO(); //.getId();
     int optionId = dto.getOptionDTO(); // .getId();//
     QuestionAnswer questionAnswer = questionAnswersService.getItemById(questionAnswerId);
-    Option option = optionsService.getItemById(optionId);
+    Option option = optionsService.getItemByIdNoUserFilter(optionId);
     entity.setQuestionAnswer(questionAnswer);
     entity.setOptionAnswer(option);
   }

@@ -19,7 +19,7 @@ public class StepQuestionLink {
   @ManyToOne
   @MapsId("stepId")
   @JoinColumn(name = "step_id")
-  private Step stepDown; //AZ909 stepDown;
+  private Step stepDown;
 
   @ManyToOne
   @MapsId("questionId")

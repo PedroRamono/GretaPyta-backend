@@ -1,6 +1,8 @@
 package com.az.gretapyta.questionnaires.model;
 
 import com.az.gretapyta.qcore.model.BaseEntity;
+import com.az.gretapyta.questionnaires.model.interfaces.Presentable;
+import com.az.gretapyta.questionnaires.model2.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +19,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Table(name = "DRAWERS")
-public class Drawer extends BaseEntity implements Serializable {
+public class Drawer extends BaseEntity implements Presentable, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
 
@@ -35,10 +37,27 @@ public class Drawer extends BaseEntity implements Serializable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "drawer", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private Set<Questionnaire> questionnaires;
 
+  // Drawer <- User:
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+  // private Integer user;
+
+  @Override
+  public int getCreatorId() {
+    return (user != null ? user.getId() : 0);
+  }
+
+  //----/ Business Logic section: /-------------------------------//
+  @Override
+  public void filterChildrenOnReady2Show(boolean isAdmin, int creatorId) {
+    Presentable.filterChildrenOnReady2Show(isAdmin, creatorId, questionnaires);
+  }
+  //----/ Business Logic section: /-------------------------------//
+
   public String toString() {
     return "code=" + this.getCode() +
         ", name=" + this.getNameMultilang() +
-        // ", questionnaires.size[Questionnaires]=" + (questionnaires==null ? "<null>" : questionnaires.size()) + //AZ909
         ", hashCode=" + this.hashCode();
   }
 }

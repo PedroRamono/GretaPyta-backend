@@ -1,9 +1,10 @@
 package com.az.gretapyta.questionnaires.model;
 
 import com.az.gretapyta.qcore.model.BaseEntity;
+import com.az.gretapyta.questionnaires.model.interfaces.Presentable;
+import com.az.gretapyta.questionnaires.model2.User;
 import com.az.gretapyta.questionnaires.model2.UserQuestionnaire;
 import com.az.gretapyta.questionnaires.util.Constants;
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,17 +13,14 @@ import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 // @Data // not suitable for JPA entities performance-wise.
 @Getter
 @Setter
 @Table(name = "QUESTIONNAIRES")
-public class Questionnaire extends BaseEntity implements Serializable {
+public class Questionnaire extends BaseEntity implements Presentable, Serializable {
   @Serial
   private static final long serialVersionUID = 0L;
 
@@ -52,10 +50,17 @@ public class Questionnaire extends BaseEntity implements Serializable {
   @Column(name = "COMMERCIAL_USAGE", nullable = false)
   private Boolean commercialUsage;
 
+  // Questionnaire <- User:
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+  // private Integer user;
+
   // Questionnaire <- Drawer:
   @ManyToOne(fetch = FetchType.LAZY, optional = false) // FetchType.EAGER FetchType.LAZY
   @JoinColumn(name = "drawer_id", nullable = false)
   private Drawer drawer;
+  // private Integer drawerId;
 
 
   //(1) Many-to-Many Join DOWN (Questionnaire-Step)
@@ -68,6 +73,7 @@ public class Questionnaire extends BaseEntity implements Serializable {
 
   // Questionnaire -> Step:
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "questionnaire")
+  //TO TRY: @OneToMany(fetch = FetchType.LAZY, mappedBy = "questionnaire", cascade = CascadeType.REFRESH)
   private Set<QuestionnaireStepLink> questionnaireSteps;
   //
   //(1) Many-to-Many Join DOWN (Questionnaire-Step)
@@ -77,13 +83,23 @@ public class Questionnaire extends BaseEntity implements Serializable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "questionnaireUser", cascade = CascadeType.ALL)
   private Set<UserQuestionnaire> qestionnaireUsers;
 
+  @Override
+  public int getCreatorId() {
+    return (user != null ? user.getId() : 0);
+  }
+
   //----/ Business Logic section: /-------------------------------//
   public Set<Question> getAllQuestions() {
-    if ((stepsUp ==null) || stepsUp.isEmpty()) return Collections.EMPTY_SET; // In IT Tests scenario this will happen.
+    if ((stepsUp ==null) || stepsUp.isEmpty()) return Collections.emptySet(); // In IT Tests scenario this will happen.
 
     Set<Question> ret = new HashSet<>();
     stepsUp.forEach(p -> ret.addAll(p.getQuestionsUp()));
     return ret;
+  }
+
+  @Override
+  public void filterChildrenOnReady2Show(boolean isAdmin, int creatorId) {
+    Presentable.filterChildrenOnReady2Show(isAdmin, creatorId, stepsUp);
   }
   //----/ Business Logic section: /-------------------------------//
 

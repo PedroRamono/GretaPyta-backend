@@ -1,14 +1,10 @@
 package com.az.gretapyta.questionnaires.dto;
 
 import com.az.gretapyta.qcore.dto.BaseDTO;
-import com.az.gretapyta.qcore.enums.QuestionnaireTypes;
-import com.az.gretapyta.questionnaires.model.Drawer;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
@@ -23,14 +19,16 @@ import static com.az.gretapyta.qcore.util.Constants.DEFAULT_LOCALE;
 //@Setter
 /// @AllArgsConstructor
 public class QuestionnaireDTO extends BaseDTO {
-  /// private Integer id;
+
+  @NotNull
+  private Integer userId;
 
   @NotNull
   @Size(max = 16)
   private String code;
 
   @NotNull
-  private QuestionnaireTypes questionnaireType;
+  private String questionnaireType; // enum code.
 
   // @NotNull
   @Size(max = 64)
@@ -45,7 +43,7 @@ public class QuestionnaireDTO extends BaseDTO {
   private String description;
   private Map<String, String> descriptionMultilang; /// = new TreeMap<>();
 
-  @Getter(AccessLevel.NONE) // Don't broadcast it.
+  /// @Getter(AccessLevel.NONE) // Don't broadcast it.
   private String langCode = DEFAULT_LOCALE;
 
   @NotNull
@@ -57,11 +55,11 @@ public class QuestionnaireDTO extends BaseDTO {
   private Integer statsCntr;
 
   @NotNull
-  private Drawer drawer; // private Drawer drawer;
+  // private Drawer drawer; // private Drawer drawer;
+  private Integer drawerId;
 
   private List<StepDTO> steps; // Step Integer
 
   //----/ Business Logic section: /-------------------------------//
-
   //----/ Business Logic section: /-------------------------------//
 }

@@ -1,11 +1,11 @@
 package com.az.gretapyta.questionnaires.model;
 
 import com.az.gretapyta.qcore.model.BaseEntity;
-
+import com.az.gretapyta.questionnaires.model.interfaces.Presentable;
 import com.az.gretapyta.questionnaires.model2.QuestionAnswer;
+import com.az.gretapyta.questionnaires.model2.User;
 import com.az.gretapyta.questionnaires.util.Constants;
 import jakarta.persistence.*;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -21,7 +21,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Table(name = "QUESTIONS")
-public class Question extends BaseEntity implements Serializable {
+public class Question extends BaseEntity implements Presentable, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
 
@@ -41,6 +41,12 @@ public class Question extends BaseEntity implements Serializable {
 
   @Column(name = "READY_2_SHOW", nullable = false)
   private Boolean ready2Show;
+
+  // Drawer <- User:
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+  // private Integer user;
 
   //(1) Many-to-Many Join UP (Step-Question)
   //
@@ -68,4 +74,16 @@ public class Question extends BaseEntity implements Serializable {
   // Question -> QuestionAnswer:
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "question", cascade = CascadeType.ALL)
   private Set<QuestionAnswer> questionAnswers;
+
+  @Override
+  public int getCreatorId() {
+    return (user != null ? user.getId() : 0);
+  }
+
+  //----/ Business Logic section: /-------------------------------//
+  @Override
+  public void filterChildrenOnReady2Show(boolean isAdmin, int creatorId) {
+    Presentable.filterChildrenOnReady2Show(isAdmin, creatorId, options);
+  }
+  //----/ Business Logic section: /-------------------------------//
 }

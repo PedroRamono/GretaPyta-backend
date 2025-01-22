@@ -55,7 +55,7 @@ public abstract class QuestionAnswerMapper {
     int questionId = dto.getQuestionDTO(); // .getId();
 
     UserQuestionnaire userQuestionnaire = userQuestionnairesService.getItemById(userQuestionnaireId);
-    Question question = questionsService.getItemById(questionId); //TODO ... checking against NPE, handling it  !!!!!!
+    Question question = questionsService.getItemByIdNoUserFilter(questionId); //TODO ... checking against NPE, handling it  !!!!!!
 
     entity.setUserQuestionnaire(userQuestionnaire);
     entity.setQuestion(question);

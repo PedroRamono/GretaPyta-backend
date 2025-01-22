@@ -1,6 +1,7 @@
 package com.az.gretapyta.questionnaires.controller2;
 
 import com.az.gretapyta.qcore.controller.APIController;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.controller.OptionController;
@@ -80,6 +81,13 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
   public void setUp() {
     resetDb(); // Clear at the beginning.
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // REPETITION from QuestionAnswerControllerIT.java !!!!!!!!!!!!!!!
@@ -92,11 +100,13 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
     // AnswerTypes.RADIO_BUTTONS
     QuestionDTO question111EnDto = questionController.fetchDTOFromCode( // AnswerTypes.RADIO_BUTTONS
         QuestionControllerIT.QUESTION_CODE_TEST1,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
 
     // AnswerTypes.MULTI_CHOICE
     QuestionDTO question222EnDto = questionController.fetchDTOFromCode( // AnswerTypes.MULTI_CHOICE
         QuestionControllerIT.QUESTION_CODE_TEST2,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
     //
     // REPETITION from QuestionAnswerControllerIT.java !!!!!!!!!!!!!!!
@@ -156,6 +166,7 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
   public void test02() throws Exception {
     List<OptionDTO> options =
         optionController.getItemsForParent( questionAnswer111EnDto.getQuestionDTO(),
+                                            userAdministratorDTO.getId(),
                                             userAnonymousEnDTO.getPreferredLang() );
     OptionDTO optionDto = options.get(0); // first one.
 
@@ -169,6 +180,7 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
   public void test03() throws Exception {
     List<OptionDTO> options =
         optionController.getItemsForParent( questionAnswer111EnDto.getQuestionDTO(),
+                                            userAdministratorDTO.getId(),
                                             userAnonymousEnDTO.getPreferredLang());
 
     OptionDTO optionDto = options.get(options.size() -1);
@@ -198,6 +210,7 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
   public void test04() throws Exception {
     List<OptionDTO> options =
         optionController.getItemsForParent( questionAnswer222EnDto.getQuestionDTO(),
+                                            userAdministratorDTO.getId(),
                                             userAnonymousEnDTO.getPreferredLang() );
     OptionDTO option111Dto = options.get(0); // first one.
 
@@ -211,6 +224,7 @@ public class AnswerSelectedControllerIT extends BaseClassIT {
   public void test05() throws Exception {
     List<OptionDTO> options =
         optionController.getItemsForParent( questionAnswer222EnDto.getQuestionDTO(),
+                                            userAdministratorDTO.getId(),
                                             userAnonymousEnDTO.getPreferredLang() );
     OptionDTO option222Dto = options.get(options.size() -1); // last one.
     AnswerSelectedDTO answerSelectedDto = new AnswerSelectedDTO(questionAnswer222EnDto.getId(), option222Dto.getId());

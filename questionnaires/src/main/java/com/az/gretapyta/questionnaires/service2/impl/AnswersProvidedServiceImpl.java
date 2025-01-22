@@ -3,12 +3,13 @@ package com.az.gretapyta.questionnaires.service2.impl;
 import com.az.gretapyta.qcore.exception.BusinessException;
 import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.service.BaseServiceImpl;
-import com.az.gretapyta.questionnaires.jpa2.AnswerProvidedSpecification;
+import com.az.gretapyta.questionnaires.jpa.GenericSpecification;
 import com.az.gretapyta.questionnaires.model2.AnswerProvided;
 import com.az.gretapyta.questionnaires.repository2.AnswersProvidedRepository;
 import com.az.gretapyta.questionnaires.service2.AnswersProvidedService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +32,11 @@ public class AnswersProvidedServiceImpl extends BaseServiceImpl implements Answe
   }
 
   public Optional<AnswerProvided> getItemByQuestionAnswerId(Integer questionAnswerId) {
-    return repository.findAll(AnswerProvidedSpecification.withQuestionAnswerId(questionAnswerId))
+    Specification<AnswerProvided> specQuestionAnswerId = GenericSpecification.getParentIdSpecs(
+        questionAnswerId,
+        "questionAnswer");
+
+    return repository.findAll(specQuestionAnswerId)
         .stream()
         .findFirst();
   }

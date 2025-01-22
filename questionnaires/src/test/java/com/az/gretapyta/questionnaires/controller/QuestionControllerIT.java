@@ -6,9 +6,12 @@ import com.az.gretapyta.qcore.exception.BusinessException;
 import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
+import com.az.gretapyta.questionnaires.controller2.UserController;
+import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionnaireDTO;
 import com.az.gretapyta.questionnaires.dto.StepDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.model.StepQuestionLink;
 import com.az.gretapyta.questionnaires.repository.QuestionsRepository;
 import com.az.gretapyta.questionnaires.util.Converters;
@@ -42,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest( // classes = QuestionnairesApp.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Order(value = 4)
+@Order(value = 5)
 public class QuestionControllerIT extends BaseClassIT {
 
   @Autowired
@@ -50,6 +53,9 @@ public class QuestionControllerIT extends BaseClassIT {
 
   @Autowired
   StepController parentController;
+
+  @Autowired
+  UserController userController;
 
   @Autowired
   QuestionnaireController grandParentController;
@@ -75,15 +81,25 @@ public class QuestionControllerIT extends BaseClassIT {
   public void setUp() {
     resetDb(); // Clear at the beginning.
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     loadParentEntities(QuestionnaireControllerIT.QUESTIONNAIRE_CODE_TEST1);
 
     testQuestion111DTO = getTestQuestion111DTO(QUESTION_CODE_TEST1, AnswerTypes.RADIO_BUTTONS);
+    testQuestion111DTO.setUserId(userAdministratorDTO.getId());
     testQuestion222DTO = getTestQuestion222DTO(QUESTION_CODE_TEST2, AnswerTypes.MULTI_CHOICE);
+    testQuestion222DTO.setUserId(userAdministratorDTO.getId());
     testQuestion333DTO = getTestQuestion333DTO(QUESTION_CODE_TEST3, AnswerTypes.TEXT);
-
+    testQuestion333DTO.setUserId(userAdministratorDTO.getId());
     testQuestion444DTO = getTestQuestion444DTO(QUESTION_CODE_TEST4, AnswerTypes.NUMBER_INTEGER);
+    testQuestion444DTO.setUserId(userAdministratorDTO.getId());
   }
 
   // @AfterEach
@@ -96,9 +112,13 @@ public class QuestionControllerIT extends BaseClassIT {
 
     Optional<QuestionnaireDTO> grandParent = grandParentController.fetchDTOFromCode(
           grandParentCode,
+          userAdministratorDTO.getId(),
           Constants.DEFAULT_LOCALE);
 
-    List<StepDTO> retList = parentController.getItemsForParent(grandParent.get().getId(), Constants.DEFAULT_LOCALE);
+    List<StepDTO> retList = parentController.getItemsForParent(
+        grandParent.get().getId(),
+        userAdministratorDTO.getId(),
+        Constants.DEFAULT_LOCALE);
     if ((retList == null) || (retList.size() < 2)) {
       throw new NotFoundException("Steps List for Questionnaire with ID = " + grandParent.get().getId() +  " could not be found !");
     }
@@ -147,10 +167,10 @@ public class QuestionControllerIT extends BaseClassIT {
 
   private static QuestionDTO createTestQuestionDTO(String code, AnswerTypes answerType, Map<String, String> nameElements) {
     QuestionDTO questionDTO = new QuestionDTO();
-    questionDTO.setReady2Show(false);
+    questionDTO.setReady2Show(true);
 
     questionDTO.setCode(code);
-    questionDTO.setAnswerType(answerType);
+    questionDTO.setAnswerType(answerType.getCode());
     questionDTO.setQuestionAskedMultilang(nameElements);
     return questionDTO;
   }
@@ -195,8 +215,7 @@ public class QuestionControllerIT extends BaseClassIT {
   private ResponseEntity<QuestionDTO> postForEntity(QuestionDTO itemDto) throws Exception {
     String testUrl = BASE_URI + port + APIController.QUESTIONS_URL;
     String jsonContent = Converters.convertObjectToJson(itemDto);
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
     return restTemplate.postForEntity(testUrl, entity, QuestionDTO.class);
   }

@@ -20,10 +20,10 @@ public class QuestionAnswer extends BaseEntity implements Serializable {
   private static final long serialVersionUID = 1L;
 
   // QuestionAnswer <- UserQuestionnaire:
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "user_questionnaire_id", nullable = false)
-  private UserQuestionnaire userQuestionnaire;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false, targetEntity = UserQuestionnaire.class)
+  @JoinColumn(name = "user_questionnaire_id", referencedColumnName = "id", nullable = false)
 
+  private UserQuestionnaire userQuestionnaire;
 
   // QuestionAnswer <- Question:
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -35,6 +35,6 @@ public class QuestionAnswer extends BaseEntity implements Serializable {
   private Set<AnswerSelected> answerSelections;
 
   @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
-  @JoinColumn(name = "answer_provided_id") //AZ401
+  @JoinColumn(name = "answer_provided_id")
   private AnswerProvided answerProvided;
 }

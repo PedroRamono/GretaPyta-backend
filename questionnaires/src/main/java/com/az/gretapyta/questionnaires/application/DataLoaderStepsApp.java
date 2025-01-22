@@ -6,8 +6,10 @@ import com.az.gretapyta.qcore.util.Constants;
 
 import com.az.gretapyta.questionnaires.controller.QuestionnaireController;
 import com.az.gretapyta.questionnaires.controller.StepController;
+import com.az.gretapyta.questionnaires.controller2.UserController;
 import com.az.gretapyta.questionnaires.dto.QuestionnaireDTO;
 import com.az.gretapyta.questionnaires.dto.StepDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.model.QuestionnaireStepLink;
 import com.az.gretapyta.questionnaires.repository.StepsRepository;
 import lombok.extern.log4j.Log4j2;
@@ -22,13 +24,16 @@ import org.springframework.core.annotation.Order;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Order(3)
+@Order(4)
 @Log4j2
 @SpringBootApplication
 public class DataLoaderStepsApp implements ApplicationRunner  {
   private final QuestionnaireController questionnaireController;
   private final StepsRepository stepsRepository;
   private final StepController stepController;
+  private final UserController userController;
+
+  public UserDTO USER_ADMINISTRATOR;
 
   @Value("${greta.defaults.load-init-data}")
   private boolean loadInitData;
@@ -40,11 +45,13 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
   @Autowired
   public DataLoaderStepsApp( QuestionnaireController questionnaireController,
                              StepsRepository stepsRepository,
-                            StepController stepController) {
+                             StepController stepController,
+                             UserController userController) {
 
     this.questionnaireController = questionnaireController;
     this.stepsRepository = stepsRepository;
     this.stepController = stepController;
+    this.userController = userController;
   }
 
   @Override
@@ -53,12 +60,11 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     if ((! loadInitData) || (stepsRepository.count() > 0)) {
       return;
     }
-    /* //AZ909 */
+    USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
     loadData();
     SaveAllItemsOnly();
     saveLinks(); // For creating Links Step->Questionnaire.
     // testToString(); //TEST
-
   }
 
   private void SaveAllItemsOnly() {
@@ -98,7 +104,9 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
   private void saveData(String query, StepDTO[] options) {
     int displayOrder = 1;
     for (StepDTO dto : options) {
-      Optional<StepDTO> oStep = stepController.findByNameMultilangFirstLike(dto.getNameMultilang().get(Constants.DEFAULT_LOCALE));
+      Optional<StepDTO> oStep = stepController.findByNameMultilangFirstLike(
+          dto.getNameMultilang().get(Constants.DEFAULT_LOCALE),
+          USER_ADMINISTRATOR.getId());
       StepDTO stepForLink = (((oStep != null) && oStep.isPresent()) ? oStep.get() : saveDto(dto));
 
       if (query==null || query.isEmpty() || (stepForLink == null)) { // No Link to be created
@@ -123,7 +131,11 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
   }
 
   private QuestionnaireStepLink saveLinkEntry(String query, StepDTO dtoForLink, int displayOrder, int tenantId) {
-    Optional<QuestionnaireDTO> optDTO = questionnaireController.fetchDTOFromCode(query, Constants.DEFAULT_LOCALE);
+    USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
+
+    Optional<QuestionnaireDTO> optDTO = questionnaireController.fetchDTOFromCode(
+        query, USER_ADMINISTRATOR.getId(),
+        Constants.DEFAULT_LOCALE);
     if ((optDTO != null) && optDTO.isPresent()) {
       QuestionnaireDTO questionnaireDTO = optDTO.get();
       QuestionnaireStepLink newLink = stepController.executeCreateParentChildLink(
@@ -167,6 +179,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements0.put("ru", "Шаг: Какая соц. Этап использования мультимедиа");
     // jsonNameTranslations = Converters.convertMapToJson(elements1);
     FOR_SOCIAL_MEDIA_STEP1_DTO.setNameMultilang(elements0);
+    FOR_SOCIAL_MEDIA_STEP1_DTO.setUserId(USER_ADMINISTRATOR.getId());
 
     // (2)
     Map<String, String> elements1 = new TreeMap<>();
@@ -174,6 +187,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements1.put("pl", "Krok: dane osobowe");
     elements1.put("ru", "Шаг: Биологические данные человекаp");
     FOR_PEOPLE_STEP1_DTO.setNameMultilang(elements1);
+    FOR_PEOPLE_STEP1_DTO.setUserId(USER_ADMINISTRATOR.getId());
 
     // (3)
     Map<String, String> elements2 = new TreeMap<>();
@@ -181,6 +195,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements2.put("pl", "Krok: aktywnowść zawodowa"); //!!!!! Polska litera 'o'
     elements2.put("ru", "Шаг: Профессиональная деятельность человека");
     FOR_PEOPLE_STEP2_DTO.setNameMultilang(elements2);
+    FOR_PEOPLE_STEP2_DTO.setUserId(USER_ADMINISTRATOR.getId());
 
     // (4)
     Map<String, String> elements3 = new TreeMap<>();
@@ -188,6 +203,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements3.put("pl", "Krok: aktywność w Sieciach Socjalnych");
     elements3.put("ru", "Шаг: Соц. Медийная деятельность");
     FOR_PEOPLE_STEP3_DTO.setNameMultilang(elements3);
+    FOR_PEOPLE_STEP3_DTO.setUserId(USER_ADMINISTRATOR.getId());
 
     // (5)
     Map<String, String> elements4 = new TreeMap<>();
@@ -195,6 +211,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements4.put("pl", "Krok: wybory prezydenckie USA 2024");
     elements4.put("ru", "Шаг: Президентские выборы в США 2024 г.");
     FOR_POLITICS_STEP1_DTO.setNameMultilang(elements4);
+    FOR_POLITICS_STEP1_DTO.setUserId(USER_ADMINISTRATOR.getId());
 
     // (6)
     Map<String, String> elements5 = new TreeMap<>();
@@ -202,6 +219,7 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
     elements5.put("pl", "Krok: Zgadywanka 1");
     elements5.put("ru", "Шаг: Викторина номер 1");
     FOR_POTPOURI_STEP1_DTO.setNameMultilang(elements5);
+    FOR_POTPOURI_STEP1_DTO.setUserId(USER_ADMINISTRATOR.getId());
   }
 
   private void testToString() {
@@ -217,14 +235,8 @@ public class DataLoaderStepsApp implements ApplicationRunner  {
   }
 
   private static StepDTO initCommonDTO() {
-    StepDTO ret = new StepDTO(); //null,
-//                       null,
-//                           null,
-//                         0,
-//                         false,
-//                         0,
-//                            null );
-    ret.setReady2Show(false);
+    StepDTO ret = new StepDTO();
+    ret.setReady2Show(true);
     ret.setCreated(LocalDateTime.now());
     ret.setUpdated(LocalDateTime.now());
     return ret;

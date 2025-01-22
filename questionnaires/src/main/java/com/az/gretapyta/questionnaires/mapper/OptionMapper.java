@@ -4,15 +4,19 @@ import com.az.gretapyta.qcore.util.CommonUtilities;
 import com.az.gretapyta.questionnaires.dto.OptionDTO;
 import com.az.gretapyta.questionnaires.model.Option;
 import com.az.gretapyta.questionnaires.model.QuestionOptionLink;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.az.gretapyta.questionnaires.service2.UsersService;
+import org.mapstruct.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(componentModel = "spring")
 public abstract class OptionMapper {
 
+  @Autowired
+  UsersService usersService;
+
   @BeanMapping(ignoreByDefault = true)
   @Mapping(source = "id", target = "id")
+  @Mapping(source = "user.id", target = "userId")
   @Mapping(source = "code", target = "code")
   @Mapping(source = "created", target = "created")
   @Mapping(source = "ready2Show", target = "ready2Show")
@@ -56,5 +60,10 @@ public abstract class OptionMapper {
         .filter(d -> d.getQuestionDown().getId() == parentId)
         .findFirst()
         .map(QuestionOptionLink::getDisplayOrder).orElseGet(() -> StepMapper.DEFAULT_DISPLAY_ORDER));
+  }
+
+  @AfterMapping
+  public void afterChildMapping(@MappingTarget Option entity, OptionDTO dto) {
+    entity.setUser(usersService.getItemById(dto.getUserId()));
   }
 }

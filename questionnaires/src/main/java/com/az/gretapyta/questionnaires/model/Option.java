@@ -1,8 +1,9 @@
 package com.az.gretapyta.questionnaires.model;
 
-
 import com.az.gretapyta.qcore.model.BaseEntity;
+import com.az.gretapyta.questionnaires.model.interfaces.Presentable;
 import com.az.gretapyta.questionnaires.model2.AnswerSelected;
+import com.az.gretapyta.questionnaires.model2.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,16 +12,14 @@ import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 // @Data // Not suitable for JPA entities performance-wise.
 @Getter
 @Setter
 @Table(name = "OPTIONS")
-public class Option extends BaseEntity implements Serializable {
+public class Option extends BaseEntity implements Presentable, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
 
@@ -41,7 +40,12 @@ public class Option extends BaseEntity implements Serializable {
   @Column(name = "PREFERRED_ANSWER")
   private Boolean preferredAnswer;
 
-  /* //TODO ... */
+  // Option <- User:
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+  // private Integer user;
+
   //(1) Many-to-Many Join UP (Questionnaire-Step)
   //
   @ManyToMany(fetch = FetchType.LAZY, mappedBy = "options")
@@ -56,4 +60,15 @@ public class Option extends BaseEntity implements Serializable {
   // Option -> SelectedAnswer:
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "optionAnswer")
   private Set<AnswerSelected> selectedAnswers;
+
+  @Override
+  public int getCreatorId() {
+    return (user != null ? user.getId() : 0);
+  }
+
+  //----/ Business Logic section: /-------------------------------//
+  @Override
+  public void filterChildrenOnReady2Show(boolean isAdmin, int creatorId) {
+  }
+  //----/ Business Logic section: /-------------------------------//
 }

@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AnswerProvidedDTO extends BaseDTO {
-  private Integer questionAnswerDTO; //AZ401 was QuestionAnswerDTO
+  private Integer questionAnswerDTO; //AZ was QuestionAnswerDTO
   private GenericValue answer;
 }

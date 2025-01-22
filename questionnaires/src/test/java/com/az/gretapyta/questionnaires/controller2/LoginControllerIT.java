@@ -48,7 +48,7 @@ public class LoginControllerIT extends BaseClassIT {
   public void test01() throws Exception {
     String testUrl = BASE_URI + port + APIController.USER_IDENTITY_URL + APIController.LOGIN_API;
     String wrongPassword = "password";
-    LoginInfo authenticationRequest = new LoginInfo(UserControllerIT.TEST_USER_EN_LOGIN_NAME, wrongPassword);
+    LoginInfo authenticationRequest = new LoginInfo(UserControllerIT.TEST_USER_EN_LOGIN_NAME, wrongPassword, "");
     String jsonContent = Converters.convertObjectToJson(authenticationRequest);
 
     try {
@@ -77,7 +77,7 @@ public class LoginControllerIT extends BaseClassIT {
   public void test02() throws Exception {
     String testUrl = BASE_URI + port + APIController.USER_IDENTITY_URL + APIController.LOGIN_API;
     String password = UserControllerIT.TEST_PASSWORD_FOR_USER;
-    LoginInfo authenticationRequest = new LoginInfo(UserControllerIT.TEST_USER_EN_LOGIN_NAME, password);
+    LoginInfo authenticationRequest = new LoginInfo(UserControllerIT.TEST_USER_EN_LOGIN_NAME, password, "");
     String jsonContent = Converters.convertObjectToJson(authenticationRequest);
 
     mockMvc.perform(

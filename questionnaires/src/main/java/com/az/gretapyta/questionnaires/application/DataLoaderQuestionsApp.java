@@ -4,8 +4,10 @@ import com.az.gretapyta.qcore.enums.AnswerTypes;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.controller.QuestionController;
 import com.az.gretapyta.questionnaires.controller.StepController;
+import com.az.gretapyta.questionnaires.controller2.UserController;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
 import com.az.gretapyta.questionnaires.dto.StepDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.model.StepQuestionLink;
 import com.az.gretapyta.questionnaires.repository.QuestionsRepository;
 import lombok.extern.log4j.Log4j2;
@@ -23,7 +25,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 @Log4j2
-@Order(4)
+@Order(5)
 @SpringBootApplication
 public class DataLoaderQuestionsApp implements ApplicationRunner {
 
@@ -33,8 +35,6 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
   public static final String STEP_PPL_PROF_QUERY = "Person's professional activities step";
   public static final String STEP_POL_US_ELECTIONS_QUERY = "US Presidential Elections 2024 step";
   public static final String STEP_PPO_QUIZ1_QUERY = "Quiz 1 step";
-
-
 
   // 1 Question for 'Social Media' Drawer - DRAWER_CODE_SOCIAL_MEDIA = "SMD":
   public static final String QUESTION_SMD_USAGE = "QUE_SMD_SRV_USG";
@@ -58,9 +58,12 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
   public static final String QUESTION_PPO_QUIZ1_MOUNTAIN = "QUE_PPO_GEO_MNT";
   public static final String QUESTION_PPO_QUIZ1_CAPITOL = "QUE_PPO_GEO_CPT";
 
+  public UserDTO USER_ADMINISTRATOR;
+
   private final StepController stepController;
   private final QuestionsRepository questionsRepository;
   private final QuestionController questionController;
+  private final UserController userController;
 
   @Value("${greta.defaults.load-init-data}")
   private boolean loadInitData;
@@ -72,10 +75,12 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
   @Autowired
   public DataLoaderQuestionsApp( StepController stepController,
                                  QuestionsRepository questionsRepository,
-                                 QuestionController questionController ) {
+                                 QuestionController questionController,
+                                 UserController userController) {
     this.stepController = stepController;
     this.questionsRepository = questionsRepository;
     this.questionController = questionController;
+    this.userController = userController;
   }
 
   @Override
@@ -84,11 +89,10 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     if ((! loadInitData) || (questionsRepository.count() > 0)) {
       return;
     }
-    /* //AZ909 */
+    USER_ADMINISTRATOR = userController.getFirstUserFromList("Greta", "Pyta");
     loadData();
     SaveAllItemsOnly();
     saveLinks(); // For creating Links Question->Step.
-
   }
 
   private void SaveAllItemsOnly() {
@@ -144,7 +148,9 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
   private void saveData(String query, QuestionDTO[] list) {
     int displayOrder = 1;
     for(QuestionDTO dto : list) {
-      Optional<QuestionDTO> oQquestion = questionController.fetchDTOFromCode(dto.getCode(), Constants.DEFAULT_LOCALE);
+      Optional<QuestionDTO> oQquestion = questionController.fetchDTOFromCode( dto.getCode(),
+                                                                              USER_ADMINISTRATOR.getId(),
+                                                                              Constants.DEFAULT_LOCALE );
       QuestionDTO questionForLink = (((oQquestion != null) && oQquestion.isPresent()) ? oQquestion.get() : saveDto(dto));
 
       if (query==null || query.isEmpty()) { // No Link to be created
@@ -169,7 +175,7 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
   }
 
   private StepQuestionLink saveLinkEntry(String query, QuestionDTO dtoForLink, int displayOrder, int tenantId) {
-    Optional<StepDTO> stepDTO = stepController.findByNameMultilangFirstLike(query);
+    Optional<StepDTO> stepDTO = stepController.findByNameMultilangFirstLike(query, USER_ADMINISTRATOR.getId());
     if (stepDTO.isPresent()) {
       try {
         StepQuestionLink newLink = questionController.executeCreateParentChildLink(stepDTO.get(), dtoForLink, displayOrder, tenantId);
@@ -229,7 +235,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setCode(QUESTION_SMD_USAGE);
     // FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setTitleMultilang("");
     FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setQuestionAskedMultilang(elements0);
-    FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setAnswerType(AnswerTypes.MULTI_CHOICE);
+    FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setAnswerType(AnswerTypes.MULTI_CHOICE.getCode());
+    FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setUserId(USER_ADMINISTRATOR.getId());
 
     // (2)
     // FOR: elements1.put("en", "Person's Bio data step");
@@ -240,7 +247,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_PEOPLE_Q1_STEP1_QUESTION_1.setCode(QUESTION_PPL_YOURSELF_SEX);
     // FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setTitleMultilang("");
     FOR_PEOPLE_Q1_STEP1_QUESTION_1.setQuestionAskedMultilang(elements11);
-    FOR_PEOPLE_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_PEOPLE_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_PEOPLE_Q1_STEP1_QUESTION_1.setUserId(USER_ADMINISTRATOR.getId());
 
     //(3)
     Map<String, String> elements12 = new TreeMap<>();
@@ -250,7 +258,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_PEOPLE_Q1_STEP1_QUESTION_2.setCode(QUESTION_PPL_YOURSELF_AGE);
     // FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setTitleMultilang("");
     FOR_PEOPLE_Q1_STEP1_QUESTION_2.setQuestionAskedMultilang(elements12);
-    FOR_PEOPLE_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.LIST_CHOICE);
+    FOR_PEOPLE_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.LIST_CHOICE.getCode());
+    FOR_PEOPLE_Q1_STEP1_QUESTION_2.setUserId(USER_ADMINISTRATOR.getId());
 
     //(4)
     Map<String, String> elements13 = new TreeMap<>();
@@ -260,7 +269,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_PEOPLE_Q1_STEP1_QUESTION_3.setCode(QUESTION_PPL_YOURSELF_MARITAL);
     // FOR_SOCIAL_MEDIA_Q1_STEP1_QUESTION.setTitleMultilang("");
     FOR_PEOPLE_Q1_STEP1_QUESTION_3.setQuestionAskedMultilang(elements13);
-    FOR_PEOPLE_Q1_STEP1_QUESTION_3.setAnswerType(AnswerTypes.LIST_CHOICE);
+    FOR_PEOPLE_Q1_STEP1_QUESTION_3.setAnswerType(AnswerTypes.LIST_CHOICE.getCode());
+    FOR_PEOPLE_Q1_STEP1_QUESTION_3.setUserId(USER_ADMINISTRATOR.getId());
 
     // (5)
     // FOR: elements2.put("en", "Person's professional activities step");
@@ -271,7 +281,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_PEOPLE_Q1_STEP2_QUESTION_1.setCode(QUESTION_PPL_PROFESSION_HISTORY);
     // FOR_PEOPLE_Q1_STEP2_QUESTION_1.setTitleMultilang("");
     FOR_PEOPLE_Q1_STEP2_QUESTION_1.setQuestionAskedMultilang(elements21);
-    FOR_PEOPLE_Q1_STEP2_QUESTION_1.setAnswerType(AnswerTypes.NUMBER_INTEGER);
+    FOR_PEOPLE_Q1_STEP2_QUESTION_1.setAnswerType(AnswerTypes.NUMBER_INTEGER.getCode());
+    FOR_PEOPLE_Q1_STEP2_QUESTION_1.setUserId(USER_ADMINISTRATOR.getId());
 
     //(6)
     Map<String, String> elements22 = new TreeMap<>();
@@ -281,7 +292,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_PEOPLE_Q1_STEP2_QUESTION_2.setCode(QUESTION_PPL_PROFESSION_STATUS);
     // FOR_PEOPLE_Q1_STEP2_QUESTION_1.setTitleMultilang("");
     FOR_PEOPLE_Q1_STEP2_QUESTION_2.setQuestionAskedMultilang(elements22);
-    FOR_PEOPLE_Q1_STEP2_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_PEOPLE_Q1_STEP2_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_PEOPLE_Q1_STEP2_QUESTION_2.setUserId(USER_ADMINISTRATOR.getId());
 
     //(7) FOR: elements4.put("en", "US Presidential Elections 2024 step");
     Map<String, String> elements23 = new TreeMap<>();
@@ -291,7 +303,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_POLITICS_Q1_STEP1_QUESTION_1.setCode(QUESTION_POL_US_PRESIDENT_2024_PREDICT);
     // FOR_PEOPLE_Q1_STEP2_QUESTION_1.setTitleMultilang("");
     FOR_POLITICS_Q1_STEP1_QUESTION_1.setQuestionAskedMultilang(elements23);
-    FOR_POLITICS_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_POLITICS_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_POLITICS_Q1_STEP1_QUESTION_1.setUserId(USER_ADMINISTRATOR.getId());
 
     //(8)
     Map<String, String> elements24 = new TreeMap<>();
@@ -301,7 +314,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_POLITICS_Q1_STEP1_QUESTION_2.setCode(QUESTION_POL_US_PRESIDENT_2024_WANT);
     // FOR_PEOPLE_Q1_STEP1_QUESTION_2.setTitleMultilang("");
     FOR_POLITICS_Q1_STEP1_QUESTION_2.setQuestionAskedMultilang(elements24);
-    FOR_POLITICS_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_POLITICS_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_POLITICS_Q1_STEP1_QUESTION_2.setUserId(USER_ADMINISTRATOR.getId());
 
     //(9)
     Map<String, String> elements25 = new TreeMap<>();
@@ -311,7 +325,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_POTPOURI_Q1_STEP1_QUESTION_1.setCode(QUESTION_PPO_QUIZ1_RIVER);
     // FOR_POTPOURI_Q1_STEP1_QUESTION_1.setTitleMultilang("");
     FOR_POTPOURI_Q1_STEP1_QUESTION_1.setQuestionAskedMultilang(elements25);
-    FOR_POTPOURI_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_POTPOURI_Q1_STEP1_QUESTION_1.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_POTPOURI_Q1_STEP1_QUESTION_1.setUserId(USER_ADMINISTRATOR.getId());
 
     //(10)
     Map<String, String> elements26 = new TreeMap<>();
@@ -321,7 +336,8 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_POTPOURI_Q1_STEP1_QUESTION_2.setCode(QUESTION_PPO_QUIZ1_MOUNTAIN);
     // FOR_POTPOURI_Q1_STEP1_QUESTION_2.setTitleMultilang("");
     FOR_POTPOURI_Q1_STEP1_QUESTION_2.setQuestionAskedMultilang(elements26);
-    FOR_POTPOURI_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_POTPOURI_Q1_STEP1_QUESTION_2.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_POTPOURI_Q1_STEP1_QUESTION_2.setUserId(USER_ADMINISTRATOR.getId());
 
     //(11)
     Map<String, String> elements27 = new TreeMap<>();
@@ -331,21 +347,13 @@ public class DataLoaderQuestionsApp implements ApplicationRunner {
     FOR_POTPOURI_Q1_STEP1_QUESTION_3.setCode(QUESTION_PPO_QUIZ1_CAPITOL);
     // FOR_POTPOURI_Q1_STEP1_QUESTION_3.setTitleMultilang("");
     FOR_POTPOURI_Q1_STEP1_QUESTION_3.setQuestionAskedMultilang(elements27);
-    FOR_POTPOURI_Q1_STEP1_QUESTION_3.setAnswerType(AnswerTypes.RADIO_BUTTONS);
+    FOR_POTPOURI_Q1_STEP1_QUESTION_3.setAnswerType(AnswerTypes.RADIO_BUTTONS.getCode());
+    FOR_POTPOURI_Q1_STEP1_QUESTION_3.setUserId(USER_ADMINISTRATOR.getId());
   }
 
   private static QuestionDTO initCommonDTO() {
-    QuestionDTO ret = new QuestionDTO(); // null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        false,
-//        null);
-    ret.setReady2Show(false);
+    QuestionDTO ret = new QuestionDTO();
+    ret.setReady2Show(true);
     ret.setCreated(LocalDateTime.now());
     ret.setUpdated(LocalDateTime.now());
     return ret;

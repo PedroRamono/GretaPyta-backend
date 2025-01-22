@@ -2,11 +2,15 @@ package com.az.gretapyta.qcore.exception;
 
 import com.az.gretapyta.qcore.model.BaseEntity;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public class BusinessException extends Exception {
   private String whatReason = "";
   private transient Class<? extends BaseEntity> entity;
+
+  @Setter
+  private Integer suggestedHttpStatus;
 
   public BusinessException(String message) {
     super(message);

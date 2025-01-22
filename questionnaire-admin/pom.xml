@@ -23,11 +23,18 @@
   <dependencies>
 
     <!-- Ensure that the application module can access the model modules. -->
+    <!--
     <dependency>
       <groupId>com.az.gretapyta.qcore</groupId>
       <artifactId>qcore</artifactId>
       <version>${project.version}</version>
-      <!-- <scope>compile</scope> -->
+    </dependency>
+    -->
+    <dependency>
+      <groupId>com.az.gretapyta</groupId>
+      <artifactId>qcore</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
     </dependency>
 
 

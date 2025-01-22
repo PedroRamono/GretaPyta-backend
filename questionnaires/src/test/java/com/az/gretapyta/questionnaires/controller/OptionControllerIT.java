@@ -1,10 +1,14 @@
 package com.az.gretapyta.questionnaires.controller;
 
 import com.az.gretapyta.qcore.controller.APIController;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
+import com.az.gretapyta.questionnaires.controller2.UserController;
+import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
 import com.az.gretapyta.questionnaires.dto.OptionDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.model.QuestionOptionLink;
 import com.az.gretapyta.questionnaires.repository.OptionsRepository;
 import com.az.gretapyta.questionnaires.util.Converters;
@@ -37,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest( // classes = QuestionnairesApp.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Order(value = 6)
+@Order(value = 7)
 public class OptionControllerIT extends BaseClassIT {
 
   @Autowired
@@ -45,6 +49,9 @@ public class OptionControllerIT extends BaseClassIT {
 
   @Autowired
   QuestionController parentController;
+
+  @Autowired
+  UserController userController;
 
   @Autowired
   private OptionsRepository repository;
@@ -71,6 +78,13 @@ public class OptionControllerIT extends BaseClassIT {
   public void setUp() {
     resetDb(); // Clear at the beginning.
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     question111DTO = getParentEntity(QuestionControllerIT.QUESTION_CODE_TEST1); // the answer is radio buttons selection.
@@ -91,7 +105,7 @@ public class OptionControllerIT extends BaseClassIT {
 
   private QuestionDTO getParentEntity(String code) {
     // Should still exist from QuestionControllerIT Tests:
-    Optional<QuestionDTO> retObject = parentController.fetchDTOFromCode(code,"en");
+    Optional<QuestionDTO> retObject = parentController.fetchDTOFromCode(code, userAdministratorDTO.getId(),"en");
     return retObject.get();
   }
 
@@ -137,7 +151,7 @@ public class OptionControllerIT extends BaseClassIT {
 
   private static OptionDTO createTestOptionDTO(String code, Map<String, String> nameElements) {
     OptionDTO ret = new OptionDTO();
-    ret.setReady2Show(false);
+    ret.setReady2Show(true);
     ret.setCode(code);
     ret.setNameMultilang(nameElements);
     return ret;
@@ -184,8 +198,7 @@ public class OptionControllerIT extends BaseClassIT {
   private ResponseEntity<OptionDTO> postForEntity(OptionDTO itemDto) throws Exception {
     String testUrl = BASE_URI + port + APIController.OPTIONS_URL;
     String jsonContent = Converters.convertObjectToJson(itemDto);
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
     return restTemplate.postForEntity(testUrl, entity, OptionDTO.class);
   }

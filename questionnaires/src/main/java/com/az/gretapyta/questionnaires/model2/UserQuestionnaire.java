@@ -38,10 +38,10 @@ public class UserQuestionnaire extends BaseEntity implements Serializable {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "questionnaire_id", nullable = false)
   private Questionnaire questionnaireUser;
-  // private Integer questionnaireUser; //AZ404
+  // private Integer questionnaireUser;
 
   // UserQuestionnaire -> QuestionAnswer:
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "userQuestionnaire", cascade = CascadeType.ALL)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "userQuestionnaire", cascade = CascadeType.PERSIST)
   private Set<QuestionAnswer> questionAnswers;
 
   @Override

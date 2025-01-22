@@ -15,7 +15,7 @@ public abstract class AnswerProvidedMapper {
   @BeanMapping(ignoreByDefault = true)
   @Mapping(source = "id", target = "id")
   @Mapping(source = "answer", target = "answer")
-  @Mapping(source = "questionAnswer.id", target = "questionAnswerDTO")  //AZ404 added
+  @Mapping(source = "questionAnswer.id", target = "questionAnswerDTO")
   @Mapping(source = "created", target = "created")
   @Mapping(source = "updated", target = "updated")
   public abstract AnswerProvidedDTO map(AnswerProvided entity);

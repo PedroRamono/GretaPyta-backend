@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
+import static com.az.gretapyta.qcore.controller.BaseController.REQ_ATTRIB_USER_IDENTIFIER;
+
 @Log4j2
 @Component
 public class JwtRequestFilter extends BaseUserIdentityFilter { // OncePerRequestFilter {
@@ -43,6 +45,7 @@ public class JwtRequestFilter extends BaseUserIdentityFilter { // OncePerRequest
   protected void doFilterInternal( @Nonnull HttpServletRequest request,
                                    @Nonnull HttpServletResponse response,
                                    @Nonnull FilterChain chain ) throws ServletException, IOException {
+
     Optional<JWToken> optJwtToken = getUserTokenFromRequest(request);
     String userIdentifier = null;
     String jwtHashValue = null;
@@ -50,6 +53,10 @@ public class JwtRequestFilter extends BaseUserIdentityFilter { // OncePerRequest
       try {
         userIdentifier = getUserIdentifierFromToken(optJwtToken.get().contentHash());
         jwtHashValue = optJwtToken.get().contentHash();
+        request.setAttribute(REQ_ATTRIB_USER_IDENTIFIER, userIdentifier); // Make it available for Controllers.
+
+log.debug("(doFilterInternal)-1 Incoming Request: User ID=" + userIdentifier +"; JWT=" +jwtHashValue);
+
       } catch (Exception e) {
         throw new ServletException(e);
       }
@@ -82,7 +89,7 @@ public class JwtRequestFilter extends BaseUserIdentityFilter { // OncePerRequest
     //By loginName:
     // User user = usersService.getUserByLoginName(username).orElseThrow(NotFoundException::new);
     //By User ID:
-    Integer userId = Integer.valueOf(userIdentifier); //AZ808
+    Integer userId = Integer.valueOf(userIdentifier);
     return usersService.getItemById(userId); //.orElseThrow(NotFoundException::new);
   }
 

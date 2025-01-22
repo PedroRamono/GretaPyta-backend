@@ -5,9 +5,9 @@ import com.az.gretapyta.questionnaires.dto.QuestionDTO;
 import com.az.gretapyta.questionnaires.dto.StepDTO;
 import com.az.gretapyta.questionnaires.model.QuestionnaireStepLink;
 import com.az.gretapyta.questionnaires.model.Step;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.az.gretapyta.questionnaires.model.StepQuestionLink;
+import com.az.gretapyta.questionnaires.service2.UsersService;
+import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Comparator;
@@ -19,8 +19,12 @@ public abstract class StepMapper {
   @Autowired
   protected QuestionMapper questionMapper;
 
+  @Autowired
+  UsersService usersService;
+
   @BeanMapping(ignoreByDefault = true) // ignoreByDefault = false)
   @Mapping(source = "id", target = "id")
+  @Mapping(source = "user.id", target = "userId")
   @Mapping(source = "created", target = "created")
   @Mapping(source = "ready2Show", target = "ready2Show")
   // @Mapping(source = "nameMultilang", target = "nameMultilang")
@@ -50,15 +54,19 @@ public abstract class StepMapper {
         .findFirst()
         .map(QuestionnaireStepLink::getDisplayOrder).orElseGet(() -> DEFAULT_DISPLAY_ORDER));
 
-    //(4)
-    if ( ! (entity.getQuestionsUp() == null)) {
-      List<QuestionDTO> list =
-          entity.getQuestionsUp().stream().map(p -> questionMapper.mapWithLang(p, langCode)).toList();
-      dto.setQuestions(list
-          .stream()
-          .sorted(Comparator.comparing(QuestionDTO::getDisplayOrder))
-          .toList());
-    }
+    //(4) Questions, do sorting:
+    List<QuestionDTO> sortedQuestionsDto = entity.getStepQuestions()
+        .stream()
+        .sorted(Comparator.comparing(StepQuestionLink::getDisplayOrder))
+        .map(p -> {
+          QuestionDTO n = questionMapper.mapWithLang(p.getQuestionUp(), langCode);
+              n.setDisplayOrder(p.getDisplayOrder());
+              return n;
+            }
+        )
+        .toList();
+    dto.setQuestions(sortedQuestionsDto);
+
     return dto;
   }
 
@@ -75,5 +83,10 @@ public abstract class StepMapper {
         .filter(d -> d.getQuestionnaire().getId() == parentId)
         .findFirst()
         .map(QuestionnaireStepLink::getDisplayOrder).orElseGet(() -> DEFAULT_DISPLAY_ORDER));
+  }
+
+  @AfterMapping
+  public void afterChildMapping(@MappingTarget Step entity, StepDTO dto) {
+    entity.setUser(usersService.getItemById(dto.getUserId()));
   }
 }

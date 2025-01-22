@@ -31,13 +31,11 @@ public class HttpRootRequestIT {
   @Autowired
   private TestRestTemplate restTemplate;
 
-  private ValidatableResponse response;
-
   @Test
   @Order(value = 1)
   @DisplayName("(1) When Request to Home Controller, then should return default home message.")
   public void test1() {
-    assertThat(this.restTemplate.getForObject(BASE_URI + port + APIController.API_ROOT_URL,
+    assertThat(this.restTemplate.getForObject(BASE_URI + port + APIController.API_ROOT_URL +"/",
         String.class)).isEqualTo(HomeController.HOME_REQUEST_MESSAGE);
   }
 
@@ -46,9 +44,9 @@ public class HttpRootRequestIT {
   @DisplayName("(2) When Request to Home Controller, then Status should return 200 and response content should contain home message.")
   public void test2() {
     // http://localhost:8091/api/ver1/
-    String url = BASE_URI + port + APIController.API_ROOT_URL;
+    String url = BASE_URI + port + APIController.API_ROOT_URL +"/";
 
-    response = given().contentType("application/json")
+    ValidatableResponse response = given().contentType("application/json")
         .header("Content-Type", "application/json")
         .when().get(url).then().statusCode(200);
 

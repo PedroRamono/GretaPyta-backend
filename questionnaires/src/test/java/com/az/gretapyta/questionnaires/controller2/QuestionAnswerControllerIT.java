@@ -1,6 +1,7 @@
 package com.az.gretapyta.questionnaires.controller2;
 
 import com.az.gretapyta.qcore.controller.APIController;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.controller.*;
@@ -82,6 +83,13 @@ public class QuestionAnswerControllerIT extends BaseClassIT {
   public void setUp() {
     resetDb(); // Clear at the beginning.
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     UserDTO userAnonymousEnDTO = userController.fetchDTOByAnonymousFlag(Constants.DEFAULT_LOCALE);
@@ -99,26 +107,29 @@ public class QuestionAnswerControllerIT extends BaseClassIT {
 
     question111EnDto = questionController.fetchDTOFromCode( // AnswerTypes.RADIO_BUTTONS
         QuestionControllerIT.QUESTION_CODE_TEST1,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
 
     question222EnDto = questionController.fetchDTOFromCode( // AnswerTypes.MULTI_CHOICE
         QuestionControllerIT.QUESTION_CODE_TEST2,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
 
     question333EnDto = questionController.fetchDTOFromCode( // AnswerTypes.TEXT
         QuestionControllerIT.QUESTION_CODE_TEST3,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
 
     question444EnDto = questionController.fetchDTOFromCode( // AnswerTypes.NUMBER_INTEGER
         QuestionControllerIT.QUESTION_CODE_TEST4,
+        userAdministratorDTO.getId(),
         userRussianUserDTO.getPreferredLang()).get();
 
     question333RuDto = questionController.fetchDTOFromCode( // AnswerTypes.TEXT
         QuestionControllerIT.QUESTION_CODE_TEST3,
+        userAdministratorDTO.getId(),
         userRussianUserDTO.getPreferredLang()).get();
 
-
-    //AZ909 //////////////////////////////////////
     //(1) get all taken questionnaires for User 1 (Anonymous EN)
     //(2) For each (1) get all Steps.
     //(3) for each (2) get all Questions.
@@ -133,20 +144,24 @@ public class QuestionAnswerControllerIT extends BaseClassIT {
 
     Set<QuestionDTO> setUser1 = questionnaireController.getAllQuestionsForQuestionnaire(
         questionnaire1Id,
+        userAdministratorDTO.getId(),
         "en");
 
     Set<QuestionDTO> setUser2 = questionnaireController.getAllQuestionsForQuestionnaire(
         questionnaire2Id,
+        userAdministratorDTO.getId(),
         "ru");
 
     Optional<QuestionnaireDTO> OptTestQuestionnaire222DTO =
         questionnaireController.fetchDTOFromCode(QuestionnaireControllerIT.QUESTIONNAIRE_CODE_TEST2,
+            userAdministratorDTO.getId(),
             Constants.DEFAULT_LOCALE);
 
     QuestionnaireDTO testQuestionnaire222DTO = OptTestQuestionnaire222DTO.get();
 
     Set<QuestionDTO> set2 = questionnaireController.getAllQuestionsForQuestionnaire(
         questionnaire2Id,
+        userAdministratorDTO.getId(),
         "ru");
   }
 
@@ -170,25 +185,32 @@ public class QuestionAnswerControllerIT extends BaseClassIT {
 
     for (UserQuestionnaireDTO n1 : userQuestionnaireDTOList) {
       QuestionnaireDTO questionnaireDTO = questionnaireController.fetchDTOFromId( n1.getQuestionnaireDTO(),
+                                                                                  userAdministratorDTO.getId(),
                                                                                   userDto.getPreferredLang() );
 
       //(2)
       // Steps provided in proper display order:
-      List<StepDTO> steps = stepController.getItemsForParent(questionnaireDTO.getId(), userDto.getPreferredLang());
+      List<StepDTO> steps = stepController.getItemsForParent(questionnaireDTO.getId(),
+          userAdministratorDTO.getId(),
+          userDto.getPreferredLang());
 
       String mess2 = "  ===> (2) Questionnaire %s has %d Step(s).";
       printDevInfo(String.format(mess2, questionnaireDTO.getCode(), steps.size()));
 
       for (StepDTO n2 : steps) {
         // Questions provided in proper display order:
-        List<QuestionDTO> questions = questionController.getItemsForParent(n2.getId(), userDto.getPreferredLang());
+        List<QuestionDTO> questions = questionController.getItemsForParent(n2.getId(),
+            userAdministratorDTO.getId(),
+            userDto.getPreferredLang());
         String mess3 = "    ===> (3) Step (order=%s) has %d Question(s).";
         printDevInfo(String.format(mess3, n2.getDisplayOrder(), questions.size()));
 
         //(3)
         for (QuestionDTO n3 : questions) {
           // Options provided in proper display order:
-          List<OptionDTO> options = optionController.getItemsForParent(n3.getId(), userDto.getPreferredLang());
+          List<OptionDTO> options = optionController.getItemsForParent(n3.getId(),
+              userAdministratorDTO.getId(),
+              userDto.getPreferredLang());
           String mess4 = "      ===> (4) Question %s (order=%d) has %d Option(s). User to answer it !";
           printDevInfo(String.format(mess4, n3.getCode(), n3.getDisplayOrder(), options.size()));
           presentOptions(options);

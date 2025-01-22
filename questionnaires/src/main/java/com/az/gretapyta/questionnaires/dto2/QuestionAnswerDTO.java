@@ -11,8 +11,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class QuestionAnswerDTO extends BaseDTO {
-  private Integer userQuestionnaireDTO; //AZ909-4 was UserQuestionnaireDTO
-  private Integer questionDTO; //AZ909-4 was QuestionDTO
+  private Integer userQuestionnaireDTO; //AZ was UserQuestionnaireDTO
+  private Integer questionDTO; //AZ was QuestionDTO
 
   private List<AnswerSelectedDTO> answerSelectionsDTO;
   private AnswerProvidedDTO answerProvidedDTO;

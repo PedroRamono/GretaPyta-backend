@@ -15,7 +15,9 @@ import static com.az.gretapyta.qcore.util.Constants.DEFAULT_LOCALE;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class StepDTO extends BaseDTO {
-  // private Integer id;
+
+  @NotNull
+  private Integer userId;
 
   // @Getter(AccessLevel.NONE) // Don't broadcast it.
   private String name;
@@ -30,12 +32,8 @@ public class StepDTO extends BaseDTO {
   @NotNull
   private boolean ready2Show = false;
 
-  @NotNull
-  private Integer questionnaire; // private Questionnaire questionnaire;
-
   private List<QuestionDTO> questions; // private List<Question> questions;
 
   //----/ Business Logic section: /-------------------------------//
-
   //----/ Business Logic section: /-------------------------------//
 }

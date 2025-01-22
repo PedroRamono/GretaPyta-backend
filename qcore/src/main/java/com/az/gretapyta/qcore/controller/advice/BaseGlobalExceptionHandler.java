@@ -2,13 +2,13 @@ package com.az.gretapyta.qcore.controller.advice;
 
 import com.az.gretapyta.qcore.advice.ErrorResponse;
 import com.az.gretapyta.qcore.advice.FieldError;
+import com.az.gretapyta.qcore.exception.BusinessException;
 import com.az.gretapyta.qcore.exception.NotFoundException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.NonNullApi;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -81,7 +81,13 @@ public abstract class BaseGlobalExceptionHandler extends ResponseEntityException
     exception.printStackTrace();
     final ErrorResponse errorResponse = new ErrorResponse();
     errorResponse.setMessage(exception.getMessage());
-    errorResponse.setHttpStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    int status = HttpStatus.INTERNAL_SERVER_ERROR.value();
+    if (BusinessException.class.isInstance(exception)) {
+      status = ((BusinessException)exception).getSuggestedHttpStatus() != null ?
+          ((BusinessException)exception).getSuggestedHttpStatus() :
+          status;
+    }
+    errorResponse.setHttpStatus(status);
     errorResponse.setException(exception.getClass().getSimpleName());
     return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
   }

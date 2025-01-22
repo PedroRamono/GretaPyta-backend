@@ -2,10 +2,14 @@ package com.az.gretapyta.questionnaires.controller;
 
 import com.az.gretapyta.qcore.controller.APIController;
 import com.az.gretapyta.qcore.enums.QuestionnaireTypes;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
+import com.az.gretapyta.questionnaires.controller2.UserController;
+import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
 import com.az.gretapyta.questionnaires.dto.DrawerDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionnaireDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.mapper.DrawerMapper;
 import com.az.gretapyta.questionnaires.model.Drawer;
 import com.az.gretapyta.questionnaires.repository.QuestionnairesRepository;
@@ -42,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest( // classes = QuestionnairesApp.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Order(value = 2)
+@Order(value = 3)
 public class QuestionnaireControllerIT extends BaseClassIT {
 
   @Autowired
@@ -50,6 +54,12 @@ public class QuestionnaireControllerIT extends BaseClassIT {
 
   @Autowired
   DrawerController parentController;
+
+  @Autowired
+  QuestionnaireController grandParentController;
+
+  @Autowired
+  UserController userController;
 
   @Autowired
   private QuestionnairesRepository repository;
@@ -68,15 +78,22 @@ public class QuestionnaireControllerIT extends BaseClassIT {
   public void setUp() {
     resetDb(); // Clear at the beginning.
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     Drawer drawer = getParentEntity();
 
     testQuestionnaire111DTO = getTestQuestionnaire1DTO();
-    testQuestionnaire111DTO.setDrawer(drawer);
+    testQuestionnaire111DTO.setDrawerId(drawer.getId());
 
     testQuestionnaire222DTO = getTestQuestionnaire2DTO();
-    testQuestionnaire222DTO.setDrawer(drawer);
+    testQuestionnaire222DTO.setDrawerId(drawer.getId());
   }
 
   // @AfterEach
@@ -86,7 +103,10 @@ public class QuestionnaireControllerIT extends BaseClassIT {
 
   private Drawer getParentEntity() {
     // Should still exist from DrawerControllerIT Tests:
-    Optional<DrawerDTO> retObject = parentController.fetchDTOFromCode(DrawerControllerIT.DRAWER_CODE_TEST1, "en");
+    Optional<DrawerDTO> retObject = parentController.fetchDTOFromCode(
+        DrawerControllerIT.DRAWER_CODE_TEST1,
+        userAdministratorDTO.getId(),
+        "en");
     DrawerDTO ret = retObject.get();
     Drawer entity = drawerMapper.map(ret);
     entity.setCreated(null);
@@ -111,10 +131,10 @@ public class QuestionnaireControllerIT extends BaseClassIT {
 
   private static QuestionnaireDTO createTestQuestionnaireDTO(String code, QuestionnaireTypes questionnaireType, Map<String, String> nameElements) {
     QuestionnaireDTO questionnaireDTO = new QuestionnaireDTO();
-    questionnaireDTO.setReady2Show(false);
+    questionnaireDTO.setReady2Show(true);
 
     questionnaireDTO.setCode(code);
-    questionnaireDTO.setQuestionnaireType(questionnaireType);
+    questionnaireDTO.setQuestionnaireType(questionnaireType.getCode());
     questionnaireDTO.setNameMultilang(nameElements);
     return questionnaireDTO;
   }
@@ -140,8 +160,7 @@ public class QuestionnaireControllerIT extends BaseClassIT {
     String testUrl = BASE_URI + port + APIController.QUESTIONNAIRES_URL;
     String jsonContent = Converters.convertObjectToJson(testQuestionnaire111DTO);
 
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
     ResponseEntity<QuestionnaireDTO> retObject = restTemplate.postForEntity(testUrl, entity, QuestionnaireDTO.class);
 
@@ -154,6 +173,9 @@ public class QuestionnaireControllerIT extends BaseClassIT {
 
   @Test
   @Order(value = 3)
+   /*
+  // Not going through ID Filter - no User authentication/authorization
+  // TODO ... fix it
   @DisplayName("(3) Another way: when valid new QuestionnaireDTO, then create new Questionnaire.")
   public void test03() throws Exception {
     String testUrl = BASE_URI + port + APIController.QUESTIONNAIRES_URL;
@@ -166,10 +188,29 @@ public class QuestionnaireControllerIT extends BaseClassIT {
         .andExpect(status().isCreated())
         .andDo(print());
 
-    Optional<QuestionnaireDTO> optFoundDTO = controller.fetchDTOFromCode(QUESTIONNAIRE_CODE_TEST2, Constants.DEFAULT_LOCALE);
+    Optional<QuestionnaireDTO> optFoundDTO = controller.fetchDTOFromCode(
+        QUESTIONNAIRE_CODE_TEST2,
+        userAdministratorDTO.getId(),
+        Constants.DEFAULT_LOCALE);
 
     assertTrue(optFoundDTO.isPresent());
     assertThat(optFoundDTO.get().getCode()).isEqualTo(QUESTIONNAIRE_CODE_TEST2);
+  }
+  */
+  @DisplayName("(3) When valid new QuestionnaireDTO, then create another new Questionnaire.")
+  public void test03() throws Exception {
+    String testUrl = BASE_URI + port + APIController.QUESTIONNAIRES_URL;
+    String jsonContent = Converters.convertObjectToJson(testQuestionnaire222DTO);
+
+    HttpHeaders headers = armHeaderWithAttribs(userAdministratorDTO.getId());
+    HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
+    ResponseEntity<QuestionnaireDTO> retObject = restTemplate.postForEntity(testUrl, entity, QuestionnaireDTO.class);
+
+    assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_CREATED);
+    assertThat(retObject.getBody()).isInstanceOf(QuestionnaireDTO.class);
+    assertThat(retObject.getBody().getCode().equalsIgnoreCase(QUESTIONNAIRE_CODE_TEST1));
+
+    entityValidIdForTest = retObject.getBody().getId();
   }
 
   //(2) GETs

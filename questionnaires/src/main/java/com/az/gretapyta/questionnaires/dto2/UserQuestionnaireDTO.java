@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.net.InetAddress;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -19,7 +18,7 @@ public class UserQuestionnaireDTO extends BaseDTO {
   @Size(max = 4)
   private String answerLang;
 
-  private InetAddress ipAddressFrom;
+  private String ipAddressFrom;
 
   @NotNull
   private UserQuestionnaireStatuses completionStatus;

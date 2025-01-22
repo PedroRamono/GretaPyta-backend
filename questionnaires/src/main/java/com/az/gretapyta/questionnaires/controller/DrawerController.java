@@ -5,11 +5,11 @@ import com.az.gretapyta.qcore.controller.BaseController;
 import com.az.gretapyta.qcore.exception.BusinessException;
 import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.CommonUtilities;
-import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.dto.DrawerDTO;
 import com.az.gretapyta.questionnaires.mapper.DrawerMapper;
 import com.az.gretapyta.questionnaires.model.Drawer;
 import com.az.gretapyta.questionnaires.service.DrawersService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -46,25 +46,34 @@ public class DrawerController extends BaseController {
   @Transactional(readOnly = true)
   @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<DrawerDTO>> getAllDrawersLangFiltered(
+      HttpServletRequest request,
       HttpServletResponse response,
       @RequestParam(name = "lang", required = false, defaultValue = DEFAULT_LOCALE) String langCode) {
 
     log.debug("===> Getting all Drawers with language selected: {}", langCode);
+
+    // Get User ID from Request, set in DTO:
+    int userId = this.getUserIdFromRequestOrZero(request, langCode, this.getClass());
     SetInHeaderReturnEntityInfo(response, DrawerDTO.class.getSimpleName(), true);
-    return ResponseEntity.ok(getAllItems(langCode));
+    return ResponseEntity.ok(getAllItems(userId, langCode));
   }
 
   // http://localhost:8091/api/ver1/drawers/searchid/2?lang=ru
   @Transactional(readOnly = true)
   @GetMapping(value = APIController.SEARCH_ENTITY_BY_ID_API + "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<DrawerDTO> getItemByIdsLangFiltered(
+      HttpServletRequest request,
       HttpServletResponse response,
       @PathVariable(name = "id") final Integer id,
       @RequestParam(name = "lang", required = false, defaultValue = DEFAULT_LOCALE) String langCode) {
 
     try {
       SetInHeaderReturnEntityInfo(response, DrawerDTO.class.getSimpleName(), false);
-      return ResponseEntity.ok(fetchDTOFromId(id, langCode));
+
+      // Get User ID from Request, set in DTO:
+      int userId = this.getUserIdFromRequestOrZero(request, langCode, this.getClass());
+
+      return ResponseEntity.ok(fetchDTOFromId(id, userId, langCode));
     } catch (NotFoundException e) {
       log.error("Drawer for ID = {} not found !", id);
       String localeMess = CommonUtilities.getTranslatableMessage("error_item_of_id_does_not_exist", langCode);
@@ -76,13 +85,18 @@ public class DrawerController extends BaseController {
   @Transactional(readOnly = true)
   @GetMapping(value = "/searchcode/{code}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<DrawerDTO> getItemByCode(
+      HttpServletRequest request,
       HttpServletResponse response,
       @PathVariable(name = "code") final String code,
       @RequestParam(name = "lang", required = false, defaultValue = DEFAULT_LOCALE) String langCode) {
 
     try {
       SetInHeaderReturnEntityInfo(response, DrawerDTO.class.getSimpleName(), false);
-      return ResponseEntity.ok((fetchDTOFromCode(code, langCode)).get());
+
+      // Get User ID from Request, set in DTO:
+      int userId = this.getUserIdFromRequestOrZero(request, langCode, this.getClass());
+
+      return ResponseEntity.ok((fetchDTOFromCode(code, userId, langCode)).get());
     } catch (NotFoundException | NullPointerException e) {
       log.error("Drawer for code = '{}' not found !", code);
       String localeMess = CommonUtilities.getTranslatableMessage("error_item_of_code_does_not_exist", langCode);
@@ -91,29 +105,52 @@ public class DrawerController extends BaseController {
     }
   }
 
-  @PostMapping
+  @PostMapping(produces = "application/json")
   @ResponseStatus(HttpStatus.CREATED)
   @ResponseBody
-  public DrawerDTO createItem(@RequestBody DrawerDTO entityDto) throws Exception {
-    return executeCreateItem(entityDto, Constants.DEFAULT_LOCALE);
+  public DrawerDTO createItem(
+      HttpServletRequest request,
+      @RequestBody DrawerDTO entityDto,
+      @RequestParam(name = "lang", required = false, defaultValue = DEFAULT_LOCALE) String langCode)
+      throws Exception {
+
+    // Get User ID from Request, set in DTO:
+    int userId = this.getUserIdFromRequest(request, langCode, this.getClass());
+    entityDto.setUserId(userId);
+    return executeCreateItem(entityDto, langCode);
+  }
+
+  /// @PostMapping(value = "/patch", produces = "application/json")
+  @PutMapping(value = "/patch", produces = "application/json")
+  @ResponseBody
+  public DrawerDTO updateItem(
+      HttpServletRequest request,
+      @RequestBody DrawerDTO entityDto,
+      @RequestParam(name = "lang", required = false, defaultValue = DEFAULT_LOCALE) String langCode)
+      throws Exception {
+
+    // Get User ID from Request, set in DTO:
+    int userId = this.getUserIdFromRequest(request, langCode, this.getClass());
+    entityDto.setUserId(userId);
+    return executeUpdateItem(entityDto, langCode);
   }
 
   //---/ Servicing part /------------------------------------------------//
   //
   @Transactional(readOnly = true)
-  public List<DrawerDTO> getAllItems(String langCode) {
-    return service.getAllItems().stream().map(p -> mapper.mapWithLang(p, langCode)).toList();
+  public List<DrawerDTO> getAllItems(int userId, String langCode) {
+    return service.getAllItems(userId).stream().map(p -> mapper.mapWithLang(p, langCode)).toList();
   }
 
   @Transactional(readOnly = true)
-  public DrawerDTO fetchDTOFromId(Integer id, String langCode) {
-    Drawer entity = service.getItemById(id);
+  public DrawerDTO fetchDTOFromId(Integer id, int userId, String langCode) {
+    Drawer entity = service.getItemById(id, userId);
     return mapper.mapWithLang(entity, langCode);
   }
 
   @Transactional(readOnly = true)
-  public Optional<DrawerDTO> fetchDTOFromCode(String code, String langCode) {
-    Optional<Drawer> ret = service.getItemByCode(code);
+  public Optional<DrawerDTO> fetchDTOFromCode(String code, int userId, String langCode) {
+    Optional<Drawer> ret = service.getItemByCode(code, userId);
     return ret.map(entity -> Optional.ofNullable(mapper.mapWithLang(entity, langCode))).orElse(null);
   }
 
@@ -132,19 +169,28 @@ public class DrawerController extends BaseController {
           exception.fillInStackTrace() + ":" + exception.getMessage());
     }
   }
+
+  public DrawerDTO executeUpdateItem(DrawerDTO entityDto, String langCode) throws Exception {
+    try {
+      Drawer entity = mapper.map(entityDto);
+      Drawer entityReturned = service.updateEntity(entity, langCode);
+      return mapper.map(entityReturned);
+    } catch (ValidationException | BusinessException vbe) {
+      throw vbe;
+    } catch (Exception exception) {
+      log.error("Update Drawer failed", exception);
+      String localeMess = CommonUtilities.getTranslatableMessage("error_update_entity_failed", langCode);
+      assert localeMess != null;
+      throw new BusinessException( localeMess.formatted("Drawer", entityDto.getId()),
+          exception.fillInStackTrace() + ": " + exception.getMessage());
+    }
+  }
   //---/ Servicing part /------------------------------------------------//
 
-  //TODO... other methods (PUT, DELETE)
+  //TODO... other methods (DELETE)
   /*
-    @PutMapping("/{id}")
-    public ResponseEntity<Long> updateDrawers(@PathVariable(name = "id") final Long id,
-            @RequestBody @Valid final DrawersDTO drawersDTO) {
-        drawersService.update(id, drawersDTO);
-        return ResponseEntity.ok(id);
-    }
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDrawers(@PathVariable(name = "id") final Long id) {
+    public ResponseEntity<Void> deleteDrawer(@PathVariable(name = "id") final Long id) {
         drawersService.delete(id);
         return ResponseEntity.noContent().build();
     }

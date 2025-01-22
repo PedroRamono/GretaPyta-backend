@@ -6,9 +6,12 @@ import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.QuestionnairesApp;
+import com.az.gretapyta.questionnaires.controller.DrawerController;
 import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import com.az.gretapyta.questionnaires.mapper2.UserMapper;
 import com.az.gretapyta.questionnaires.model2.User;
+import com.az.gretapyta.questionnaires.repository.*;
+import com.az.gretapyta.questionnaires.repository2.AnswersSelectedRepository;
 import com.az.gretapyta.questionnaires.repository2.UsersRepository;
 import com.az.gretapyta.questionnaires.security.UserRoles;
 import com.az.gretapyta.questionnaires.util.Converters;
@@ -34,10 +37,12 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Objects;
 
+import static com.az.gretapyta.qcore.controller.APIController.RESTRICTED_ENTITY;
 import static com.az.gretapyta.questionnaires.HttpRootRequestIT.BASE_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -48,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 
 @ContextConfiguration
-@Order(value = 21)
+@Order(value = 1)
 public class UserControllerIT extends BaseClassIT {
 
   public final static String TEST_USER_EN_LOGIN_NAME = "johnymockito";
@@ -69,6 +74,21 @@ public class UserControllerIT extends BaseClassIT {
   @Autowired
   private UsersRepository repository;
 
+  // For clearing up all other, User-dependent Entities:
+  @Autowired
+  private DrawersRepository drawerRepository;
+  @Autowired
+  private QuestionnairesRepository questionnairesRepository;
+  @Autowired
+  private StepsRepository stepsRepository;
+  @Autowired
+  private QuestionsRepository questionsRepository;
+  @Autowired
+  private OptionsRepository optionsRepository;
+  @Autowired
+  private AnswersSelectedRepository answersSelectedRepository;
+
+  private int seedMasterId;
   private UserDTO anonymousEnDTO;
   private UserDTO johnyDTO;
   private UserDTO natalyaDTO;
@@ -78,6 +98,7 @@ public class UserControllerIT extends BaseClassIT {
   @BeforeAll
   public void setUp() {
     resetDb(); // Clear at the beginning.
+    seedAdminUser();
 
     mockMvc = MockMvcBuilders
                   .webAppContextSetup(context)
@@ -138,7 +159,35 @@ public class UserControllerIT extends BaseClassIT {
 
   // @AfterEach
   public void resetDb() {
+    answersSelectedRepository.deleteAll();
+
+    optionsRepository.deleteAll();
+    questionsRepository.deleteAll();
+    stepsRepository.deleteAll();
+    questionnairesRepository.deleteAll();
+    drawerRepository.deleteAll();
+
     repository.deleteAll();
+  }
+
+  // Initial Creator (Admin.) is needed to create consecutive Users
+  private void seedAdminUser() {
+    User masterAdmin = User.createUser("garden",
+        "",
+        GenderTypes.NOT_DECLARED.getCode(),
+        null,
+        "",
+        "seedmasteradmin",
+        "password123",
+        "en",
+        false,
+        UserRoles.ADMIN.getCode());
+
+    // No need to encrypt password for Admin. in Test.
+    // String encryptedPassword = passwordEncoder().encode(masterAdmin.getPasswordHash());
+    // masterAdmin.setPasswordHash(encryptedPassword);
+    User resUser = repository.save(masterAdmin);
+    seedMasterId = resUser.getId();
   }
 
   //------------------------------------------------------------------------//
@@ -151,13 +200,15 @@ public class UserControllerIT extends BaseClassIT {
   public void test01() throws Exception {
     String testUrl = BASE_URI + port + APIController.USERS_URL;
     String jsonContent = Converters.convertObjectToJson(anonymousEnDTO);
+    HttpHeaders headers = armHeaderWithAttribs(seedMasterId);
 
     mockMvc.perform(
-            post(testUrl)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-        .andExpect(status().isOk()) // .isCreated())
-        .andDo(print());
+        post(testUrl)
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(jsonContent))
+      .andExpect(status().isCreated()) // .isCreated() / .isOk()
+      .andDo(print());
   }
 
   @Test
@@ -166,12 +217,14 @@ public class UserControllerIT extends BaseClassIT {
   public void test02() throws Exception {
     String testUrl = BASE_URI + port + APIController.USERS_URL;
     String jsonContent = Converters.convertObjectToJson(johnyDTO);
+    HttpHeaders headers = armHeaderWithAttribs(seedMasterId);
 
     mockMvc.perform(
             post(testUrl)
+                .headers(headers)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
-        .andExpect(status().isOk()) // .isCreated())
+        .andExpect(status().isCreated()) // .isCreated())
         .andDo(print());
   }
 
@@ -182,12 +235,12 @@ public class UserControllerIT extends BaseClassIT {
     String testUrl = BASE_URI + port + APIController.USERS_URL;
     String jsonContent = Converters.convertObjectToJson(natalyaDTO);
 
-    HttpHeaders headers = new HttpHeaders();
+    HttpHeaders headers = armHeaderWithAttribs(seedMasterId);
     headers.setContentType(MediaType.APPLICATION_JSON);
     HttpEntity<String> entity = new HttpEntity<>(jsonContent, headers);
     ResponseEntity<UserDTO> retObject = restTemplate.postForEntity(testUrl, entity, UserDTO.class);
 
-    assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_OK); // SC_CREATED);
+    assertThat(retObject.getStatusCode().value()).isEqualTo(HttpServletResponse.SC_CREATED);
     assertThat(retObject.getBody()).isInstanceOf(UserDTO.class);
     assertThat(Objects.requireNonNull(retObject.getBody()).getLoginName().equalsIgnoreCase(natalyaDTO.getLoginName()));
 
@@ -200,12 +253,14 @@ public class UserControllerIT extends BaseClassIT {
   public void test04() throws Exception {
     String testUrl = BASE_URI + port + APIController.USERS_URL;
     String jsonContent = Converters.convertObjectToJson(gardenGnomeDTO);
+    HttpHeaders headers = armHeaderWithAttribs(seedMasterId);
 
     mockMvc.perform(
             post(testUrl)
+                .headers(headers)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
-        .andExpect(status().isOk()) // .isCreated())
+        .andExpect(status().isCreated())
         .andDo(print());
   }
 
@@ -213,51 +268,56 @@ public class UserControllerIT extends BaseClassIT {
   //
   @Test
   @Order(value = 5)
-  @WithAnonymousUser
-  @DisplayName("(05) When calling User Controller root URL by Anonymous User, " +
-      "then the Unauthorized status should be returned.")
+  @DisplayName("(1) When calling User Controller root URL, then the root message should be returned.")
   public void test05() throws Exception {
     String testUrl = BASE_URI + port + APIController.USERS_URL +"/";
+    String retObject = restTemplate.getForObject(testUrl, String.class);
+
+    assertTrue(retObject.contains(UserController.USER_CONTROLLER_HOME_MESSAGE));
+  }
+
+  @Test
+  @Order(value = 6)
+  @WithAnonymousUser
+  @DisplayName("(06) When calling User Controller restricted URL by Anonymous User, " +
+      "then the Unauthorized status should be returned.")
+  public void test06() throws Exception {
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY + "/all";
     mockMvc.perform(get(testUrl))
         .andExpect(status().isUnauthorized())
         .andDo(print());
   }
 
   @Test
-  @Order(value = 6)
+  @Order(value = 7)
   @WithMockUser(roles = "LU")
-  @DisplayName("(06) When calling User Controller root URL by User, " +
+  @DisplayName("(07) When calling User Controller restricted URL by User, " +
       "then the and Access Forbidden status should be returned.")
-  public void test06() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL +"/";
+  public void test07() throws Exception {
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY + "/all";
     mockMvc.perform(get(testUrl))
         .andExpect(status().isForbidden())
         .andDo(print());
   }
 
   @Test
-  @Order(value = 7)
-  @WithMockUser(roles = "AM")
-  @DisplayName("(07) When calling User Controller root URL by Administrator, " +
-      "then the root message should be returned.")
-  public void test07() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL +"/";
-    mockMvc.perform(get(testUrl))
-        .andExpect(status().isOk())
-        .andDo(print());
-  }
-
-  @Test
   @Order(value = 8)
-  //OK: @WithMockUser(roles="AM")
-  @WithMockUser(username="user", roles={"AM"}) // Administrator
-  @DisplayName("(08) When calling User Controller root URL by User with Administrator role, " +
-      "then the root message should be returned.")
+  @WithMockUser(roles = "AM")
+  @DisplayName("(08) Given all 5 Users, when calling User Controller restricted URL by Administrator" +
+      " to get all, then return 5 records.")
   public void test08() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL +"/";
-    mockMvc.perform(get(testUrl))
+    String testUrl = BASE_URI + port + APIController.USERS_URL +  RESTRICTED_ENTITY + "/all";
+    HttpHeaders headers = armHeaderWithAttribs(seedMasterId);
+
+    mockMvc.perform(
+        get(testUrl)
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+        .andDo(print())
         .andExpect(status().isOk())
-        .andDo(print());
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+        .andExpectAll(jsonPath("$").isArray() ,jsonPath("$", hasSize(5))
+        );
   }
 
   @Test
@@ -265,7 +325,16 @@ public class UserControllerIT extends BaseClassIT {
   @WithMockUser(roles = "AM")
   @DisplayName("(09) When get UserDTO by valid ID by Administrator, then returns 1 record of that ID.")
   public void test09() throws Exception {
-    testGetByEntityId(APIController.USERS_URL, entityValidIdForTest);
+    /// testGetByEntityId(APIController.USERS_URL, entityValidIdForTest);
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+         APIController.SEARCH_ENTITY_BY_ID_API + entityValidIdForTest;
+    mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(jsonPath("$").isNotEmpty())
+        .andExpect(jsonPath("$.id", is(entityValidIdForTest))
+        );
   }
 
   @Test
@@ -274,7 +343,7 @@ public class UserControllerIT extends BaseClassIT {
   @DisplayName("(10) When get UserDTO by invalid ID, then no return record and Exception should be thrown.")
   public void test10() {
     // testGetByInvalidEntityId(APIController.USERS_URL);
-    String testUrl = BASE_URI + port + APIController.USERS_URL
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY
         + APIController.SEARCH_ENTITY_BY_ID_API + INVALID_PARENT_ID;
 
     try {
@@ -295,25 +364,10 @@ public class UserControllerIT extends BaseClassIT {
   @Test
   @Order(value = 11)
   @WithMockUser(roles = "AM")
-  @DisplayName("(11) Given 3 Users, when get all, then returns 4 records.")
+  @DisplayName("(11) Given 1 existing User for Anonymous EN User, when get Anonymous for EN, then returns 1 record.")
   public void test11() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/all";
-
-    mockMvc.perform(
-            get(testUrl)
-                .contentType(MediaType.APPLICATION_JSON_VALUE))
-        .andDo(print())
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-        .andExpectAll(jsonPath("$").isArray(), jsonPath("$", hasSize(4)));
-  }
-
-  @Test
-  @Order(value = 12)
-  @WithMockUser(roles = "AM")
-  @DisplayName("(12) Given 1 existing User for Anonymous EN User, when get Anonymous for EN, then returns 1 record.")
-  public void test12() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/anonymous/" + anonymousEnDTO.getPreferredLang() ;
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+        "/anonymous/" + anonymousEnDTO.getPreferredLang() ;
 
     mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))
         .andDo(print())
@@ -327,11 +381,12 @@ public class UserControllerIT extends BaseClassIT {
   }
 
   @Test
-  @Order(value = 13)
+  @Order(value = 12)
   @WithMockUser(roles = "AM")
-  @DisplayName("(13) Given 1 existing User for EN User, when get User by login name, then returns 1 record.")
-  public void test13() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/searchbyloginname/?loginName=" + TEST_USER_EN_LOGIN_NAME;
+  @DisplayName("(12) Given 1 existing User for EN User, when get User by login name, then returns 1 record.")
+  public void test12() throws Exception {
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+        "/searchbyloginname/?loginName=" + TEST_USER_EN_LOGIN_NAME;
 
     mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))
         .andDo(print())
@@ -345,11 +400,12 @@ public class UserControllerIT extends BaseClassIT {
   }
 
   @Test
-  @Order(value = 14)
+  @Order(value = 13)
   @WithMockUser(roles = "AM")
-  @DisplayName("(14) Given 1 existing User for RU User, when get User by first and last name, then returns 1 record.")
-  public void test14() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/searchbyfullname/?firstName=" + TEST_USER_RU_FIRST_NAME +"&lastName=" +TEST_USER_RU_LAST_NAME;
+  @DisplayName("(13) Given 1 existing User for RU User, when get User by first and last name, then returns 1 record.")
+  public void test13() throws Exception {
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+        "/searchbyfullname/?firstName=" + TEST_USER_RU_FIRST_NAME +"&lastName=" +TEST_USER_RU_LAST_NAME;
 
     mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))
         .andDo(print())
@@ -363,11 +419,12 @@ public class UserControllerIT extends BaseClassIT {
   }
 
   @Test
-  @Order(value = 15)
+  @Order(value = 14)
   @WithMockUser(roles = "AM")
-  @DisplayName("(15) When given a non-existent User's name, then no User should be fund.")
-  public void test15() throws Exception {
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/searchbyfullname/?firstName=" + TEST_USER_RU_FIRST_NAME +"&lastName=" +TEST_USER_RU_LAST_NAME + "invalid";
+  @DisplayName("(14) When given a non-existent User's name, then no User should be fund.")
+  public void test14() throws Exception {
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+        "/searchbyfullname/?firstName=" + TEST_USER_RU_FIRST_NAME +"&lastName=" +TEST_USER_RU_LAST_NAME + "invalid";
 
     mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))
         .andDo(print())
@@ -378,12 +435,13 @@ public class UserControllerIT extends BaseClassIT {
   }
 
   @Test
-  @Order(value = 16)
+  @Order(value = 15)
   @WithMockUser(roles = "AM")
-  @DisplayName("(16) When given a non-existent User's login name, then no User should be fund.")
-  public void test16() {
+  @DisplayName("(15) When given a non-existent User's login name, then no User should be fund.")
+  public void test15() {
     String NON_EXISTENT_LOGIN = TEST_USER_EN_LOGIN_NAME + "invalid";
-    String testUrl = BASE_URI + port + APIController.USERS_URL + "/searchbyloginname/?loginName=" + NON_EXISTENT_LOGIN;
+    String testUrl = BASE_URI + port + APIController.USERS_URL + RESTRICTED_ENTITY +
+        "/searchbyloginname/?loginName=" + NON_EXISTENT_LOGIN;
 
     try {
       mockMvc.perform(get(testUrl).contentType(MediaType.APPLICATION_JSON_VALUE))

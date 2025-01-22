@@ -64,6 +64,8 @@ server:
 
 #
 greta:
+  client-domain: http://localhost:4206
+
   # Cookie:
   security:
     jwt-cookie-name: UserJwt

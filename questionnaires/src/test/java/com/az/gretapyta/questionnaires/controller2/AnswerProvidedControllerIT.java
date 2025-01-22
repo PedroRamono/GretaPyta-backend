@@ -1,6 +1,7 @@
 package com.az.gretapyta.questionnaires.controller2;
 
 import com.az.gretapyta.qcore.controller.APIController;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.controller.QuestionController;
@@ -73,6 +74,13 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
   public void setUp() {
     // resetDb();
 
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // REPETITION from QuestionAnswerControllerIT.java !!!!!!!!!!!!!!!
@@ -89,14 +97,17 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
 
     question333EnDto = questionController.fetchDTOFromCode( // AnswerTypes.TEXT
         QuestionControllerIT.QUESTION_CODE_TEST3,
+        userAdministratorDTO.getId(),
         userAnonymousEnDTO.getPreferredLang()).get();
 
     question444EnDto = questionController.fetchDTOFromCode( // AnswerTypes.NUMBER_INTEGER
         QuestionControllerIT.QUESTION_CODE_TEST4,
+        userAdministratorDTO.getId(),
         userRussianUserDTO.getPreferredLang()).get();
 
     question333RuDto = questionController.fetchDTOFromCode( // AnswerTypes.TEXT
         QuestionControllerIT.QUESTION_CODE_TEST3,
+        userAdministratorDTO.getId(),
         userRussianUserDTO.getPreferredLang()).get();
     //
     // REPETITION from QuestionAnswerControllerIT.java !!!!!!!!!!!!!!!
@@ -113,7 +124,7 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
         userQuestionnaireTEST222EN.getId(),
         question444EnDto.getId()).get();
 
-    String valueType = question444EnDto.getAnswerType().getCode(); // AnswerTypes.NUMBER_INTEGER.getCode();
+    String valueType = question444EnDto.getAnswerType(); // AnswerTypes.NUMBER_INTEGER.getCode();
     int valueAsIntegerNumber = 1984;
     genericValueTypeInteger = new GenericValue(valueType, Integer.toString(valueAsIntegerNumber));
   }
@@ -160,10 +171,10 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
   @DisplayName("(2) When valid new AnswerProvidedDTO for Question of text-input by Anonymous EN User," +
       " then create 1 new AnswerProvided for third Question.")
   public void test02() throws Exception {
-    String valueType = question333EnDto.getAnswerType().getCode(); // AnswerTypes.TEXT.getCode();
+    String valueType = question333EnDto.getAnswerType(); // AnswerTypes.TEXT.getCode();
     String valueAsStr = "this is text value answer by Anonymous EN User for Question QUE_TEST3";
     GenericValue genericValue = new GenericValue(valueType, valueAsStr);
-    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer333EnDto.getId(), genericValue); //AZ401 add .getId()
+    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer333EnDto.getId(), genericValue);
 
     postForEntityAndAssert(answerProvidedDto);
   }
@@ -173,10 +184,10 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
   @DisplayName("(3) When valid new AnswerProvidedDTO for Question of text-input by RU User," +
       " then create 1 new AnswerProvided for third Question.")
   public void test03() throws Exception {
-    String valueType = question333RuDto.getAnswerType().getCode(); // AnswerTypes.TEXT.getCode();
+    String valueType = question333RuDto.getAnswerType(); // AnswerTypes.TEXT.getCode();
     String valueAsStr = "answer by RU User for Question QUE_TEST3";
     GenericValue genericValue = new GenericValue(valueType, valueAsStr);
-    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer333RuDto.getId(), genericValue); //AZ401 add .getId()
+    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer333RuDto.getId(), genericValue);
 
     postForEntityAndAssert(answerProvidedDto);
   }
@@ -186,7 +197,7 @@ public class AnswerProvidedControllerIT extends BaseClassIT {
   @DisplayName("(4) When valid new AnswerProvidedDTO for Question of numeric input by Anonymous EN user in Questionnaire 2," +
       " then create 1 new AnswerProvided for that Question.")
   public void test04() throws Exception {
-    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer444EnDto.getId(), genericValueTypeInteger); //AZ401 add .getId()
+    AnswerProvidedDTO answerProvidedDto = new AnswerProvidedDTO(questionAnswer444EnDto.getId(), genericValueTypeInteger);
     String testUrl = BASE_URI + port + APIController.ANSWERS_PROVIDED_URL;
     String jsonContent = Converters.convertObjectToJson(answerProvidedDto);
     HttpHeaders headers = new HttpHeaders();

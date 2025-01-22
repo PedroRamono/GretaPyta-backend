@@ -1,11 +1,15 @@
 package com.az.gretapyta.questionnaires.controller;
 
 import com.az.gretapyta.qcore.controller.APIController;
+import com.az.gretapyta.qcore.exception.NotFoundException;
 import com.az.gretapyta.qcore.util.Constants;
 import com.az.gretapyta.questionnaires.BaseClassIT;
 import com.az.gretapyta.questionnaires.HttpRootRequestIT;
+import com.az.gretapyta.questionnaires.controller2.UserController;
+import com.az.gretapyta.questionnaires.controller2.UserControllerIT;
 import com.az.gretapyta.questionnaires.dto.QuestionDTO;
 import com.az.gretapyta.questionnaires.dto.QuestionnaireDTO;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
@@ -17,30 +21,44 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest( // classes = QuestionnairesApp.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Order(value = 5)
+@Order(value = 6)
 public class QuestionnairelControllerUtilityIT extends BaseClassIT {
 
   @Autowired
   protected QuestionnaireController controller;
+
+  @Autowired
+  UserController userController;
 
   private QuestionnaireDTO testQuestionnaire111DTO;
   private QuestionnaireDTO testQuestionnaire222DTO;
 
   @BeforeAll
   public void setUp() {
+
+    Optional<UserDTO> optUserDto = userController.fetchDTOByLoginName(UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME);
+    if(optUserDto.isPresent()) {
+      userAdministratorDTO = optUserDto.get();
+    } else {
+      throw new NotFoundException(String.format("Admin. USer '%s' not found.", UserControllerIT.TEST_USER_ADMIN_LOGIN_NAME));
+    }
+
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     testQuestionnaire111DTO =
         controller.fetchDTOFromCode(QuestionnaireControllerIT.QUESTIONNAIRE_CODE_TEST1,
-          Constants.DEFAULT_LOCALE).get();
+            userAdministratorDTO.getId(),
+            Constants.DEFAULT_LOCALE).get();
 
     testQuestionnaire222DTO =
         controller.fetchDTOFromCode(QuestionnaireControllerIT.QUESTIONNAIRE_CODE_TEST2,
+            userAdministratorDTO.getId(),
             Constants.DEFAULT_LOCALE).get();
   }
 

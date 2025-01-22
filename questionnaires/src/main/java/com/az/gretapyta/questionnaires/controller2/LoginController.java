@@ -3,11 +3,13 @@ package com.az.gretapyta.questionnaires.controller2;
 import com.az.gretapyta.qcore.controller.APIController;
 import com.az.gretapyta.qcore.controller.BaseController;
 import com.az.gretapyta.qcore.exception.NotFoundException;
+import com.az.gretapyta.questionnaires.dto2.UserDTO;
+import com.az.gretapyta.questionnaires.mapper2.UserMapper;
 import com.az.gretapyta.questionnaires.model2.User;
 import com.az.gretapyta.questionnaires.security.JWTManager;
 import com.az.gretapyta.questionnaires.security.LoginInfo;
-import com.az.gretapyta.questionnaires.util.JwtTokenUtil;
 import com.az.gretapyta.questionnaires.service2.UsersService;
+import com.az.gretapyta.questionnaires.util.JwtTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.util.Objects;
 public class LoginController extends BaseController {
 
   private final UsersService service;
+  protected final UserMapper mapper;
 
   // @Autowired
   private final AuthenticationManager authenticationManager;
@@ -41,23 +44,23 @@ public class LoginController extends BaseController {
   @Autowired
   protected JWTManager jwtManager;
 
+  // http://localhost:8091/api/ver1/identity/login
   @RequestMapping(value = APIController.LOGIN_API, method = RequestMethod.POST)
-  //AZ OK: public ResponseEntity<?> createAuthenticationToken(
-  public ResponseEntity<HttpStatus> createAuthenticationToken(
+  public ResponseEntity<UserDTO> createAuthenticationToken(
       @RequestBody LoginInfo authenticationRequest,
       HttpServletRequest request,
       HttpServletResponse response) throws Exception {
+
+    log.debug("API login: login name=" + authenticationRequest.loginName() + ", pin=" + authenticationRequest.pin());
 
     authenticate(authenticationRequest.loginName(), authenticationRequest.pin());
     final User user = service.getUserByLoginName(authenticationRequest.loginName())
           .orElseThrow(NotFoundException::new);
 
-    String tokenContent = jwtTokenUtil.generateTokenWithId(user);
+    String tokenContent = jwtTokenUtil.generateTokenWithId(user.getId());
     String userJwt = jwtManager.composeUserJwt(tokenContent);
     jwtManager.addUserTokenToResponse(request, response, userJwt,false);
-
-    //OK: return ResponseEntity.ok(new JwtResponse(tokenContent));
-    return ResponseEntity.ok(HttpStatus.OK);
+    return ResponseEntity.ok(mapper.map(user));
   }
 
   @RequestMapping(value = APIController.LOGOUT_API, method = RequestMethod.POST) // .DELETE)
@@ -70,7 +73,20 @@ public class LoginController extends BaseController {
     return ResponseEntity.ok(HttpStatus.OK);
   }
 
-    //---/ Servicing part /------------------------------------------------//
+  // http://localhost:8091/api/ver1/identity/changepin
+  @RequestMapping(value = APIController.CHANGE_PIN_API, method = RequestMethod.POST)
+  public ResponseEntity<HttpStatus> changeUserPassword(
+      @RequestBody LoginInfo authenticationRequest,
+      HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+
+    // log.debug("API Change password for login name=" + authenticationRequest.loginName() + ", old pin=" + authenticationRequest.pin() + ", new pin=" + authenticationRequest.newPin());
+    authenticate(authenticationRequest.loginName(), authenticationRequest.pin());
+    service.updatePassword(authenticationRequest.loginName(), authenticationRequest.newPin());
+    return ResponseEntity.ok(HttpStatus.OK);
+  }
+
+  //---/ Servicing part /------------------------------------------------//
   private void authenticate(String loginName, String password) throws Exception {
     Objects.requireNonNull(loginName);
     Objects.requireNonNull(password);

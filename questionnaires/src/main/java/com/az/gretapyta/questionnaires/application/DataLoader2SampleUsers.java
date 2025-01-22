@@ -25,7 +25,7 @@ import java.util.List;
  */
 
 @Log4j2
-@Order(6)
+@Order(1)
 @SpringBootApplication
 public class DataLoader2SampleUsers implements ApplicationRunner {
   private final UsersRepository usersRepository;
@@ -58,7 +58,6 @@ public class DataLoader2SampleUsers implements ApplicationRunner {
     if ((! loadInitData) || (usersRepository.count() > 0)) {
       return;
     }
-    /* //AZ909 */
     log.info("Loading anonymous Users and sample Users: {}", ITEMS.size());
     // ITEMS.forEach(user -> this.saveUser(userMapper.map(user)));
     for (User user : ITEMS) {
@@ -70,7 +69,7 @@ public class DataLoader2SampleUsers implements ApplicationRunner {
 
   private UserDTO saveUser(UserDTO dto) {
     try {
-      UserDTO newObj = userController.executeCreateItem(dto, dto.getPreferredLang());
+      UserDTO newObj = userController.executeCreateItemNoAuthorityCheck(dto, dto.getPreferredLang());
       log.info("New UserDTO item was created: ID={}", newObj.getId());
       return newObj;
     } catch (Exception e) {

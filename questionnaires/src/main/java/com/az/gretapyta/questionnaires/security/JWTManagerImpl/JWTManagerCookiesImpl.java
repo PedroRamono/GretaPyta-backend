@@ -30,7 +30,6 @@ public class JWTManagerCookiesImpl extends BaseJWTManager { /// implements A1_JW
                                       String userJwt,
                                       boolean isAnonymous ) {
     Cookie userCookie = deliverUserCookie(userJwt, getJwtCookieName(), request);
-    // userCookie.setMaxAge(20); //AZ909 isAnonymous ? 60 * 60 * 24 * 365 : security.getJwtCookieMaxAgeForUser()); // 1 year for Anonymous.
     userCookie.setMaxAge( isAnonymous ?
                           60 * 60 * 24 * 365 :
                           generalProperties.getSecurity().getJwtCookieMaxAgeForUser()); // 1 year for Anonymous.

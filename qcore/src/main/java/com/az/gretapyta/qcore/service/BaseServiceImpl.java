@@ -8,15 +8,15 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class BaseServiceImpl {
-
-  // @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
-  // public abstract <T> List<T> getAllItems();
-  //OK: public abstract <T> List<? extends BaseEntity> getAllItems();
   public abstract List<? extends BaseEntity> getAllItems();
 
-  // protected boolean validateBeforeCreate(BaseEntity entity) {
   protected <T extends BaseEntity> boolean validateBeforeCreate(T entity, String lang) throws BusinessException {
     entity.setCreated(LocalDateTime.now());
+    entity.setUpdated(LocalDateTime.now());
+    return true;
+  }
+
+  protected <T extends BaseEntity> boolean validateBeforeUpdate(T entity, String lang) throws BusinessException {
     entity.setUpdated(LocalDateTime.now());
     return true;
   }

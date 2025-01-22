@@ -1,7 +1,6 @@
 package com.az.gretapyta.questionnaires.dto;
 
 import com.az.gretapyta.qcore.dto.BaseDTO;
-import com.az.gretapyta.qcore.enums.AnswerTypes;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
@@ -16,7 +15,9 @@ import java.util.Map;
 @Data
 /// @AllArgsConstructor
 public class QuestionDTO extends BaseDTO {
-  /// private Integer id;
+
+  @NotNull
+  private Integer userId;
 
   @NotNull
   @Size(max = 16)
@@ -37,7 +38,7 @@ public class QuestionDTO extends BaseDTO {
   private Integer displayOrder;
 
   @NotNull
-  private AnswerTypes answerType;
+  private String answerType;
 
   @NotNull
   private boolean ready2Show = false;
